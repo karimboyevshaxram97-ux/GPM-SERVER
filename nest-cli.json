@@ -1,0 +1,18 @@
+{
+  "$schema": "https://json.schemastore.org/nest-cli",
+  "monorepo": true,
+  "projects": {
+    "gmp-api": {
+      "type": "application",
+      "root": "apps/gmp-api",
+      "entryFile": "src/main",
+      "sourceRoot": "apps/gmp-api/src"
+    },
+    "gmp-batch": {
+      "type": "application",
+      "root": "apps/gmp-batch",
+      "entryFile": "src/main",
+      "sourceRoot": "apps/gmp-batch/src"
+    }
+  }
+}

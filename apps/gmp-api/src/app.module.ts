@@ -43,7 +43,7 @@ import { HealthModule } from './common/health/health.module';
             uri = mongod.getUri();
           }
         } else {
-          logger.log('MONGODB_URI not set, starting in-memory MongoDB for local development.');
+          logger.log('MongoDB URI not set, starting in-memory MongoDB for local development.');
           const mongod = await MongoMemoryServer.create();
           uri = mongod.getUri();
         }

@@ -6,6 +6,7 @@
   ],
   "scripts": {
     "install": "npm install --workspaces",
+    "clean": "cd apps/gmp-api && npm run clean",
     "build": "cd apps/gmp-api && npm run build",
     "start": "cd apps/gmp-api && npm run start",
     "start:dev": "cd apps/gmp-api && npm run start:dev",

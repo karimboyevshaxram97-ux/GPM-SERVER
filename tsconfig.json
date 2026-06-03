@@ -3,6 +3,9 @@
   "references": [
     {
       "path": "./apps/gmp-api/tsconfig.json"
+    },
+    {
+      "path": "./apps/gmp-batch/tsconfig.json"
     }
   ]
 }
