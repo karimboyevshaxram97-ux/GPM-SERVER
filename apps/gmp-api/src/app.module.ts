@@ -11,6 +11,9 @@ import { graphqlConfig } from './config/graphql.config';
 
 import { UserModule } from './modules/user/user.module';
 import { AuthModule } from './modules/auth/auth.module';
+import { AgencyModule } from './modules/agency/agency.module';
+import { ServiceModule } from './modules/service/service.module';
+import { ApplicationModule } from './modules/application/application.module';
 import { HealthModule } from './common/health/health.module';
 
 @Module({
@@ -74,6 +77,9 @@ import { HealthModule } from './common/health/health.module';
     HealthModule,
     UserModule,
     AuthModule,
+    AgencyModule,
+    ServiceModule,
+    ApplicationModule,
   ],
 })
 export class AppModule {}

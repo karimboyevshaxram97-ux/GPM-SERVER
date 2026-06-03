@@ -6,6 +6,7 @@ export const graphqlConfig: ApolloDriverConfig = {
   autoSchemaFile: join(process.cwd(), 'src/schema.gql'),
   debug: process.env.NODE_ENV !== 'production',
   playground: process.env.NODE_ENV !== 'production',
+  context: ({ req }) => ({ req }),
   formatError: (error) => {
     return {
       message: error.message,

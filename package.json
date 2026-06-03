@@ -5,12 +5,21 @@
     "apps/*"
   ],
   "scripts": {
-    "install": "npm install --workspaces",
-    "clean": "cd apps/gmp-api && npm run clean",
+    "install": "npm install",
     "build": "cd apps/gmp-api && npm run build",
+    "build:batch": "cd apps/gmp-batch && npm run build",
+    "build:all": "npm run build && npm run build:batch",
     "start": "cd apps/gmp-api && npm run start",
     "start:dev": "cd apps/gmp-api && npm run start:dev",
+    "start:dev:batch": "cd apps/gmp-batch && npm run start:dev",
+    "prestart:prod": "npm run build",
     "start:prod": "cd apps/gmp-api && npm run start:prod",
-    "lint": "cd apps/gmp-api && npm run lint"
+    "start:prod:batch": "cd apps/gmp-batch && npm run start:prod",
+    "clean": "cd apps/gmp-api && npm run clean",
+    "lint": "cd apps/gmp-api && npm run lint && cd ../gmp-batch && npm run lint",
+    "test": "cd apps/gmp-api && npm run test",
+    "test:watch": "cd apps/gmp-api && npm run test:watch",
+    "test:cov": "cd apps/gmp-api && npm run test:cov",
+    "test:e2e": "cd apps/gmp-api && npm run test:e2e"
   }
 }
