@@ -1,9 +1,12 @@
 import { Module, Logger } from '@nestjs/common';
+import { APP_GUARD } from '@nestjs/core';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { MongooseModule } from '@nestjs/mongoose';
 import { GraphQLModule } from '@nestjs/graphql';
 import { JwtModule } from '@nestjs/jwt';
 import { MongoMemoryServer } from 'mongodb-memory-server';
+import { GqlJwtAuthGuard } from './common/guards/gql-jwt-auth.guard';
+import { GqlRolesGuard } from './common/guards/gql-roles.guard';
 
 import databaseConfig from './config/database.config';
 import jwtConfig from './config/jwt.config';
@@ -14,6 +17,7 @@ import { AuthModule } from './modules/auth/auth.module';
 import { AgencyModule } from './modules/agency/agency.module';
 import { ServiceModule } from './modules/service/service.module';
 import { ApplicationModule } from './modules/application/application.module';
+import { ReviewModule } from './modules/review/review.module';
 import { HealthModule } from './common/health/health.module';
 
 @Module({
@@ -80,6 +84,14 @@ import { HealthModule } from './common/health/health.module';
     AgencyModule,
     ServiceModule,
     ApplicationModule,
+    ReviewModule,
+  ],
+  providers: [
+    {
+      provide: APP_GUARD,
+      useClass: GqlJwtAuthGuard,
+    },
+    GqlRolesGuard,
   ],
 })
 export class AppModule {}

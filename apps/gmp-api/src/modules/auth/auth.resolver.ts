@@ -43,8 +43,8 @@ export class AuthResolver {
 
   @UseGuards(GqlJwtAuthGuard)
   @Mutation(() => Boolean, { name: 'logout' })
-  async logout(): Promise<boolean> {
-    return this.authService.logout();
+  async logout(@CurrentUser() user: any): Promise<boolean> {
+    return this.authService.logout(user._id.toString());
   }
 
   @UseGuards(GqlJwtAuthGuard, GqlRolesGuard)

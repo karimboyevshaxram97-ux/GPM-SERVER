@@ -1,6 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
+import * as bcrypt from 'bcrypt';
 import { CreateUserInput } from './dto/create-user.input';
 import { User, UserDocument } from './schemas/user.schema';
 
@@ -20,6 +21,10 @@ export class UserService {
     return this.userModel.findById(id).exec();
   }
 
+  async findAll(): Promise<UserDocument[]> {
+    return this.userModel.find().exec();
+  }
+
   async create(createUserInput: CreateUserInput): Promise<UserDocument> {
     const user = new this.userModel({
       ...createUserInput,
@@ -27,5 +32,22 @@ export class UserService {
     });
 
     return user.save();
+  }
+
+  async updateRefreshTokenHash(userId: string, refreshToken: string): Promise<void> {
+    const refreshTokenHash = await bcrypt.hash(refreshToken, 10);
+    await this.userModel.findByIdAndUpdate(userId, { refreshTokenHash }).exec();
+  }
+
+  async removeRefreshTokenHash(userId: string): Promise<void> {
+    await this.userModel.findByIdAndUpdate(userId, { $unset: { refreshTokenHash: '' } }).exec();
+  }
+
+  async findByIdWithRefreshToken(id: string): Promise<UserDocument | null> {
+    return this.userModel.findById(id).select('+refreshTokenHash').exec();
+  }
+
+  async updateLastLoginAt(userId: string): Promise<void> {
+    await this.userModel.findByIdAndUpdate(userId, { lastLoginAt: new Date() }).exec();
   }
 }

@@ -20,8 +20,20 @@ export class AgencyService {
   }
 
   async create(agencyData: any, userId: string): Promise<AgencyDocument> {
+    const slug =
+      agencyData.slug ||
+      (agencyData.name
+        ? agencyData.name
+            .toString()
+            .trim()
+            .toLowerCase()
+            .replace(/\s+/g, '-')
+            .replace(/[^a-z0-9-]/g, '')
+        : undefined);
+
     const agency = new this.agencyModel({
       ...agencyData,
+      slug,
       owner: new Types.ObjectId(userId),
       admins: [new Types.ObjectId(userId)],
     });

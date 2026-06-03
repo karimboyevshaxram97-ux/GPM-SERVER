@@ -31,10 +31,12 @@ export class AuthService {
     });
 
     const userObject = user.toObject ? user.toObject() : user;
+    const refreshToken = this.generateRefreshToken(userObject);
+    await this.userService.updateRefreshTokenHash(user._id.toString(), refreshToken);
 
     return {
       accessToken: this.generateAccessToken(userObject),
-      refreshToken: this.generateRefreshToken(userObject),
+      refreshToken,
       user: userObject as any,
     };
   }
@@ -51,11 +53,15 @@ export class AuthService {
       throw new UnauthorizedException('Invalid credentials.');
     }
 
+    await this.userService.updateLastLoginAt(user._id.toString());
+
     const userObject = user.toObject ? user.toObject() : user;
+    const refreshToken = this.generateRefreshToken(userObject);
+    await this.userService.updateRefreshTokenHash(user._id.toString(), refreshToken);
 
     return {
       accessToken: this.generateAccessToken(userObject),
-      refreshToken: this.generateRefreshToken(userObject),
+      refreshToken,
       user: userObject as any,
     };
   }
@@ -72,21 +78,29 @@ export class AuthService {
       throw new UnauthorizedException('Invalid refresh token.');
     }
 
-    const user = await this.userService.findById(payload.sub);
-    if (!user) {
-      throw new UnauthorizedException('User not found.');
+    const user = await this.userService.findByIdWithRefreshToken(payload.sub);
+    if (!user || !user.refreshTokenHash) {
+      throw new UnauthorizedException('Invalid refresh token.');
+    }
+
+    const tokenMatches = await bcrypt.compare(input.refreshToken, user.refreshTokenHash);
+    if (!tokenMatches) {
+      throw new UnauthorizedException('Invalid refresh token.');
     }
 
     const userObject = user.toObject ? user.toObject() : user;
+    const refreshToken = this.generateRefreshToken(userObject);
+    await this.userService.updateRefreshTokenHash(user._id.toString(), refreshToken);
 
     return {
       accessToken: this.generateAccessToken(userObject),
-      refreshToken: this.generateRefreshToken(userObject),
+      refreshToken,
       user: userObject as any,
     };
   }
 
-  async logout(): Promise<boolean> {
+  async logout(userId: string): Promise<boolean> {
+    await this.userService.removeRefreshTokenHash(userId);
     return true;
   }
 

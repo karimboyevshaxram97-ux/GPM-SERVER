@@ -29,6 +29,9 @@ export class User {
   })
   password: string;
 
+  @Prop({ select: false })
+  refreshTokenHash?: string;
+
   @Prop()
   phoneNumber?: string;
 
