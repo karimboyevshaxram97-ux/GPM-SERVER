@@ -2,6 +2,272 @@
 # THIS FILE WAS AUTOMATICALLY GENERATED (DO NOT MODIFY)
 # ------------------------------------------------------
 
+type UserType {
+  _id: ID!
+  firstName: String!
+  lastName: String!
+  email: String!
+  phoneNumber: String
+  avatar: String
+  bio: String
+  dateOfBirth: DateTime
+  nationality: String
+  role: UserRole!
+  status: UserStatus!
+  emailVerified: Boolean!
+  lastLoginAt: DateTime
+  createdAt: DateTime!
+  updatedAt: DateTime!
+}
+
+"""
+A date-time string at UTC, such as 2019-12-03T09:54:33Z, compliant with the date-time format.
+"""
+scalar DateTime
+
+enum UserRole {
+  USER
+  AGENCY_ADMIN
+  SUPER_ADMIN
+}
+
+enum UserStatus {
+  ACTIVE
+  INACTIVE
+  BANNED
+}
+
+type AuthResponse {
+  accessToken: String!
+  refreshToken: String!
+  user: UserType!
+}
+
+type AgencyType {
+  _id: ID!
+  name: String!
+  slug: String!
+  description: String
+  logo: String
+  website: String
+  email: String!
+  phoneNumber: String
+  operatingCountries: [String!]!
+  owner: String!
+  admins: [String!]!
+  status: AgencyStatus!
+  verificationStatus: AgencyVerificationStatus!
+  subscriptionStatus: SubscriptionStatus!
+  totalReviews: Float!
+  averageRating: Float!
+  totalServices: Float!
+  createdAt: DateTime!
+  updatedAt: DateTime!
+}
+
+enum AgencyStatus {
+  ACTIVE
+  INACTIVE
+  SUSPENDED
+  CLOSED
+}
+
+enum AgencyVerificationStatus {
+  PENDING
+  VERIFIED
+  REJECTED
+  EXPIRED
+}
+
+enum SubscriptionStatus {
+  TRIAL
+  ACTIVE
+  SUSPENDED
+  CANCELLED
+}
+
+type ServiceGraphType {
+  _id: ID!
+  name: String!
+  description: String
+  keywords: [String!]!
+  agency: String!
+  serviceType: String!
+  destinationCountry: String!
+  sourceCountries: [String!]!
+  price: Float
+  processingTime: String
+  status: ServiceStatus!
+  visibility: Boolean!
+  averageRating: Float!
+  totalReviews: Float!
+  tags: [String!]!
+  createdAt: DateTime!
+  updatedAt: DateTime!
+}
+
+enum ServiceStatus {
+  ACTIVE
+  INACTIVE
+  PAUSED
+  ARCHIVED
+}
+
+type ApplicationType {
+  _id: ID!
+  user: String!
+  service: String!
+  agency: String!
+  status: ApplicationStatus!
+  paymentStatus: PaymentStatus!
+  paymentAmount: Float
+  notes: String
+  appliedAt: DateTime!
+  completedAt: DateTime
+  rejectionReason: String
+  isReviewEligible: Boolean!
+  createdAt: DateTime!
+  updatedAt: DateTime!
+}
+
+enum ApplicationStatus {
+  PENDING
+  APPROVED
+  REJECTED
+  IN_PROGRESS
+  COMPLETED
+  CANCELLED
+}
+
+enum PaymentStatus {
+  PENDING
+  PROCESSING
+  COMPLETED
+  FAILED
+  REFUNDED
+}
+
+type ReviewType {
+  _id: ID!
+  user: String!
+  agency: String!
+  service: String
+  status: ReviewStatus!
+  rating: Float!
+  comment: String
+  createdAt: DateTime!
+  updatedAt: DateTime!
+}
+
+enum ReviewStatus {
+  PENDING
+  APPROVED
+  REJECTED
+  HIDDEN
+}
+
 type Query {
   health: String!
+  members: [UserType!]!
+  member(id: String!): UserType
+  me: UserType!
+  adminOnly: String!
+  agencies: [AgencyType!]!
+  agency(id: String!): AgencyType
+  agencyServiceIds(agencyId: String!): [String!]!
+  services: [ServiceGraphType!]!
+  service(id: String!): ServiceGraphType
+  servicesByAgency(agencyId: String!): [ServiceGraphType!]!
+  applications: [ApplicationType!]!
+  applicationsByUser: [ApplicationType!]!
+  applicationsByAgency(agencyId: String!): [ApplicationType!]!
+  applicationsByService(serviceId: String!): [ApplicationType!]!
+  reviewsByAgency(agencyId: String!): [ReviewType!]!
+  reviewsByService(serviceId: String!): [ReviewType!]!
+}
+
+type Mutation {
+  register(input: RegisterInput!): AuthResponse!
+  login(input: LoginInput!): AuthResponse!
+  refreshToken(input: RefreshTokenInput!): AuthResponse!
+  logout: Boolean!
+  createAgency(input: CreateAgencyInput!): AgencyType!
+  updateAgency(id: String!, input: UpdateAgencyInput!): AgencyType!
+  deleteAgency(id: String!): Boolean!
+  createService(agencyId: String!, input: CreateServiceInput!): ServiceGraphType!
+  updateService(id: String!, input: UpdateServiceInput!): ServiceGraphType!
+  deleteService(id: String!): Boolean!
+  createApplication(input: CreateApplicationInput!): ApplicationType!
+  updateApplication(id: String!, input: UpdateApplicationInput!): ApplicationType!
+  createReview(input: CreateReviewInput!): ReviewType!
+}
+
+input RegisterInput {
+  email: String!
+  password: String!
+  firstName: String!
+  lastName: String!
+}
+
+input LoginInput {
+  email: String!
+  password: String!
+}
+
+input RefreshTokenInput {
+  refreshToken: String!
+}
+
+input CreateAgencyInput {
+  name: String!
+  email: String!
+  description: String
+  operatingCountries: [String!]!
+  phoneNumber: String
+  website: String
+}
+
+input UpdateAgencyInput {
+  name: String
+  description: String
+  operatingCountries: [String!]
+  phoneNumber: String
+  website: String
+}
+
+input CreateServiceInput {
+  name: String!
+  description: String
+  serviceType: String!
+  destinationCountry: String!
+  sourceCountries: [String!]!
+  price: Float
+  tags: [String!]
+  processingTime: String
+}
+
+input UpdateServiceInput {
+  name: String
+  description: String
+  price: Float
+  tags: [String!]
+  processingTime: String
+}
+
+input CreateApplicationInput {
+  serviceId: String!
+  notes: String
+  documents: [String!]
+}
+
+input UpdateApplicationInput {
+  notes: String
+  documents: [String!]
+}
+
+input CreateReviewInput {
+  agencyId: String!
+  serviceId: String
+  rating: Int!
+  comment: String
 }
