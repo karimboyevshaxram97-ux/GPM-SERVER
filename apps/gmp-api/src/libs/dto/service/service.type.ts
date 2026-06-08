@@ -48,6 +48,12 @@ export class ServiceGraphType {
   @Field()
   currentApplicationCount: number;
 
+  @Field()
+  viewCount: number;
+
+  @Field()
+  likeCount: number;
+
   @Field({ nullable: true })
   maxApplicationCount?: number;
 

@@ -27,6 +27,8 @@ import { AnalyticsModule } from './components/analytics/analytics.module';
 import { AdminModule } from './components/admin/admin.module';
 import { UploadModule } from './components/upload/upload.module';
 import { NotificationModule } from './components/notification/notification.module';
+import { LikeModule } from './components/like/like.module';
+import { ViewModule } from './components/view/view.module';
 
 @Module({
   imports: [
@@ -92,6 +94,8 @@ import { NotificationModule } from './components/notification/notification.modul
     AdminModule,
     UploadModule,
     NotificationModule,
+    LikeModule,
+    ViewModule,
   ],
   providers: [
     {

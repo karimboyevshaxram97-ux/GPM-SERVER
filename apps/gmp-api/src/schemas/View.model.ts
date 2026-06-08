@@ -1,0 +1,24 @@
+import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
+import { HydratedDocument, Types } from 'mongoose';
+import { ViewTargetType } from '../libs/enums';
+
+export type ViewDocument = HydratedDocument<View>;
+
+@Schema({ timestamps: true, versionKey: false })
+export class View {
+  @Prop({ type: Types.ObjectId, ref: 'User' })
+  viewer?: Types.ObjectId;
+
+  @Prop({ type: Types.ObjectId, required: true })
+  targetId: Types.ObjectId;
+
+  @Prop({ enum: ViewTargetType, required: true })
+  targetType: ViewTargetType;
+}
+
+export const ViewSchema = SchemaFactory.createForClass(View);
+
+// One unique view per registered user per target (anonymous views are not deduplicated)
+ViewSchema.index({ viewer: 1, targetId: 1, targetType: 1 }, { sparse: true });
+ViewSchema.index({ targetId: 1, targetType: 1 });
+ViewSchema.index({ createdAt: 1 }, { expireAfterSeconds: 60 * 60 * 24 * 90 }); // auto-purge after 90 days

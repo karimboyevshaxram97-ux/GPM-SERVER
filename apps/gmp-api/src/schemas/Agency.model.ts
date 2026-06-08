@@ -78,6 +78,12 @@ export class Agency {
   @Prop({ default: 0 })
   agencyRank: number;
 
+  @Prop({ default: 0 })
+  viewCount: number;
+
+  @Prop({ default: 0 })
+  likeCount: number;
+
   @Prop()
   taxId?: string;
 

@@ -55,6 +55,12 @@ export class AgencyType {
   totalServices: number;
 
   @Field()
+  viewCount: number;
+
+  @Field()
+  likeCount: number;
+
+  @Field()
   createdAt: Date;
 
   @Field()

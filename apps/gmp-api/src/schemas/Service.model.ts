@@ -60,6 +60,12 @@ export class Service {
   @Prop({ default: 0 })
   averageRating: number;
 
+  @Prop({ default: 0 })
+  viewCount: number;
+
+  @Prop({ default: 0 })
+  likeCount: number;
+
   @Prop([String])
   tags: string[];
 
