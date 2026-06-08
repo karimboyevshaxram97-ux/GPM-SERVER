@@ -69,21 +69,19 @@ enum AgencyStatus {
   ACTIVE
   INACTIVE
   SUSPENDED
-  CLOSED
 }
 
 enum AgencyVerificationStatus {
   PENDING
   VERIFIED
   REJECTED
-  EXPIRED
 }
 
 enum SubscriptionStatus {
-  TRIAL
   ACTIVE
-  SUSPENDED
+  EXPIRED
   CANCELLED
+  SUSPENDED
 }
 
 type ServiceGraphType {
@@ -92,24 +90,39 @@ type ServiceGraphType {
   description: String
   keywords: [String!]!
   agency: String!
-  serviceType: String!
+  serviceType: ServiceType!
   destinationCountry: String!
   sourceCountries: [String!]!
   price: Float
   processingTime: String
   status: ServiceStatus!
-  visibility: Boolean!
+  visibility: ServiceVisibility!
   averageRating: Float!
   totalReviews: Float!
+  currentApplicationCount: Float!
+  maxApplicationCount: Float
   tags: [String!]!
   createdAt: DateTime!
   updatedAt: DateTime!
 }
 
+enum ServiceType {
+  STUDY_ABROAD
+  WORK_ABROAD
+  TRAVEL
+  VISA_SERVICES
+}
+
 enum ServiceStatus {
   ACTIVE
-  INACTIVE
-  PAUSED
+  DRAFT
+  ARCHIVED
+  SUSPENDED
+}
+
+enum ServiceVisibility {
+  PUBLIC
+  AGENCY_ONLY
   ARCHIVED
 }
 
@@ -122,6 +135,7 @@ type ApplicationType {
   paymentStatus: PaymentStatus!
   paymentAmount: Float
   notes: String
+  priority: ApplicationPriority!
   appliedAt: DateTime!
   completedAt: DateTime
   rejectionReason: String
@@ -131,20 +145,26 @@ type ApplicationType {
 }
 
 enum ApplicationStatus {
-  PENDING
+  SUBMITTED
+  UNDER_REVIEW
   APPROVED
   REJECTED
-  IN_PROGRESS
+  ACCEPTED
   COMPLETED
-  CANCELLED
+  WITHDRAWN
 }
 
 enum PaymentStatus {
   PENDING
-  PROCESSING
   COMPLETED
   FAILED
   REFUNDED
+}
+
+enum ApplicationPriority {
+  LOW
+  MEDIUM
+  HIGH
 }
 
 type ReviewType {
@@ -166,6 +186,167 @@ enum ReviewStatus {
   HIDDEN
 }
 
+type CountryType {
+  _id: ID!
+  name: String!
+  code: String!
+  code3: String
+  isoNumeric: Int
+  region: String
+  subregion: String
+  flag: String
+  flagUrl: String
+  isActive: Boolean!
+}
+
+type FollowType {
+  _id: ID!
+  user: String!
+  agency: String!
+  notificationsEnabled: Boolean!
+  followedAt: DateTime!
+  createdAt: DateTime!
+}
+
+type FollowStatusType {
+  isFollowing: Boolean!
+  notificationsEnabled: Boolean!
+}
+
+type AttachmentType {
+  url: String!
+  type: String!
+  name: String!
+}
+
+type MessageType {
+  _id: ID!
+  conversation: String!
+  sender: String!
+  text: String!
+  attachments: [AttachmentType!]!
+  isRead: Boolean!
+  isEdited: Boolean!
+  editedAt: DateTime
+  createdAt: DateTime!
+  updatedAt: DateTime!
+}
+
+type ConversationType {
+  _id: ID!
+  participants: [String!]!
+  agency: String
+  lastMessage: String
+  lastMessageAt: DateTime
+  unreadCount: Int!
+  status: ConversationStatus!
+  createdAt: DateTime!
+  updatedAt: DateTime!
+}
+
+enum ConversationStatus {
+  ACTIVE
+  ARCHIVED
+  BLOCKED
+}
+
+type PlanFeatureType {
+  name: String!
+  included: Boolean!
+  limit: Int
+}
+
+type SubscriptionPlanType {
+  _id: ID!
+  name: String!
+  slug: String!
+  description: String
+  monthlyPrice: Float!
+  annualPrice: Float!
+  currency: String!
+  features: [PlanFeatureType!]!
+  maxServices: Int!
+  maxTeamMembers: Int!
+  maxApplicationsPerMonth: Int!
+  supportLevel: SupportLevel!
+  isPublic: Boolean!
+  displayOrder: Int!
+  status: PlanStatus!
+  createdAt: DateTime!
+}
+
+enum SupportLevel {
+  BASIC
+  STANDARD
+  PREMIUM
+}
+
+enum PlanStatus {
+  ACTIVE
+  ARCHIVED
+}
+
+type PaymentHistoryType {
+  amount: Float!
+  status: String!
+  paidAt: DateTime!
+  receiptUrl: String
+}
+
+type AgencySubscriptionType {
+  _id: ID!
+  agency: String!
+  plan: String!
+  status: SubscriptionStatus!
+  stripeSubscriptionId: String
+  startDate: DateTime!
+  endDate: DateTime!
+  renewalDate: DateTime
+  cancelledAt: DateTime
+  billingCycle: BillingCycle!
+  autoRenew: Boolean!
+  paymentHistory: [PaymentHistoryType!]!
+  createdAt: DateTime!
+  updatedAt: DateTime!
+}
+
+enum BillingCycle {
+  MONTHLY
+  ANNUAL
+}
+
+type AgencyStatType {
+  _id: ID!
+  agency: String!
+  date: DateTime!
+  profileViews: Int!
+  applicationCount: Int!
+  averageRating: Float!
+  reviewCount: Int!
+  followerCount: Int!
+  activeServices: Int!
+}
+
+type ServiceStatType {
+  _id: ID!
+  service: String!
+  date: DateTime!
+  views: Int!
+  applicationCount: Int!
+  rating: Float!
+  reviewCount: Int!
+}
+
+type PlatformStatsType {
+  totalUsers: Int!
+  totalAgencies: Int!
+  totalServices: Int!
+  totalApplications: Int!
+  totalReviews: Int!
+  activeSubscriptions: Int!
+  pendingAgencyVerifications: Int!
+}
+
 type Query {
   health: String!
   members: [UserType!]!
@@ -184,6 +365,31 @@ type Query {
   applicationsByService(serviceId: String!): [ApplicationType!]!
   reviewsByAgency(agencyId: String!): [ReviewType!]!
   reviewsByService(serviceId: String!): [ReviewType!]!
+  countries(filter: CountryFilterInput): [CountryType!]!
+  country(id: String!): CountryType
+  countryByCode(code: String!): CountryType
+  followStatus(agencyId: String!): FollowStatusType!
+  myFollowingAgencies: [FollowType!]!
+  agencyFollowers(agencyId: String!): [FollowType!]!
+  myConversations: [ConversationType!]!
+  conversationMessages(conversationId: String!, limit: Int, skip: Int): [MessageType!]!
+  subscriptionPlans: [SubscriptionPlanType!]!
+  subscriptionPlan(id: String!): SubscriptionPlanType
+  allSubscriptionPlans: [SubscriptionPlanType!]!
+  agencySubscriptions(agencyId: String!): [AgencySubscriptionType!]!
+  activeSubscription(agencyId: String!): AgencySubscriptionType
+  agencyStats(agencyId: String!, from: DateTime, to: DateTime): [AgencyStatType!]!
+  serviceStats(serviceId: String!, from: DateTime, to: DateTime): [ServiceStatType!]!
+  platformStats: PlatformStatsType!
+  pendingVerifications: [AgencyType!]!
+  adminUsers(page: Int, limit: Int): [UserType!]!
+  adminAgencies(page: Int, limit: Int): [AgencyType!]!
+}
+
+input CountryFilterInput {
+  region: String
+  isActive: Boolean
+  search: String
 }
 
 type Mutation {
@@ -200,6 +406,26 @@ type Mutation {
   createApplication(input: CreateApplicationInput!): ApplicationType!
   updateApplication(id: String!, input: UpdateApplicationInput!): ApplicationType!
   createReview(input: CreateReviewInput!): ReviewType!
+  createCountry(input: CreateCountryInput!): CountryType!
+  toggleCountryActive(id: String!): CountryType
+  followAgency(agencyId: String!): FollowType!
+  unfollowAgency(agencyId: String!): Boolean!
+  toggleFollowNotifications(agencyId: String!): FollowType!
+  createOrGetConversation(input: CreateConversationInput!): ConversationType!
+  sendMessage(input: SendMessageInput!): MessageType!
+  editMessage(input: EditMessageInput!): MessageType!
+  markConversationAsRead(conversationId: String!): Boolean!
+  blockConversation(conversationId: String!): ConversationType!
+  createSubscriptionPlan(input: CreateSubscriptionPlanInput!): SubscriptionPlanType!
+  archiveSubscriptionPlan(id: String!): SubscriptionPlanType!
+  subscribeToPlan(input: SubscribeToPlanInput!): AgencySubscriptionType!
+  cancelSubscription(subscriptionId: String!): AgencySubscriptionType!
+  approveAgency(input: ApproveAgencyInput!): AgencyType!
+  rejectAgency(input: RejectAgencyInput!): AgencyType!
+  suspendAgency(input: SuspendAgencyInput!): AgencyType!
+  activateAgency(agencyId: String!): AgencyType!
+  banUser(input: BanUserInput!): UserType!
+  unbanUser(userId: String!): UserType!
 }
 
 input RegisterInput {
@@ -238,12 +464,13 @@ input UpdateAgencyInput {
 input CreateServiceInput {
   name: String!
   description: String
-  serviceType: String!
+  serviceType: ServiceType!
   destinationCountry: String!
   sourceCountries: [String!]!
   price: Float
   tags: [String!]
   processingTime: String
+  visibility: ServiceVisibility
 }
 
 input UpdateServiceInput {
@@ -252,6 +479,7 @@ input UpdateServiceInput {
   price: Float
   tags: [String!]
   processingTime: String
+  visibility: ServiceVisibility
 }
 
 input CreateApplicationInput {
@@ -270,4 +498,78 @@ input CreateReviewInput {
   serviceId: String
   rating: Int!
   comment: String
+}
+
+input CreateCountryInput {
+  name: String!
+  code: String!
+  code3: String
+  isoNumeric: Int
+  region: String
+  subregion: String
+  flag: String
+  flagUrl: String
+}
+
+input CreateConversationInput {
+  recipientId: String!
+  agencyId: String
+  initialMessage: String
+}
+
+input SendMessageInput {
+  conversationId: String!
+  text: String!
+  attachmentUrls: [String!]
+}
+
+input EditMessageInput {
+  messageId: String!
+  text: String!
+}
+
+input CreateSubscriptionPlanInput {
+  name: String!
+  description: String
+  monthlyPrice: Float!
+  annualPrice: Float!
+  features: [PlanFeatureInput!]
+  maxServices: Int
+  maxTeamMembers: Int
+  maxApplicationsPerMonth: Int
+  supportLevel: SupportLevel
+  displayOrder: Int
+}
+
+input PlanFeatureInput {
+  name: String!
+  included: Boolean!
+  limit: Int
+}
+
+input SubscribeToPlanInput {
+  agencyId: String!
+  planId: String!
+  billingCycle: BillingCycle!
+  autoRenew: Boolean
+}
+
+input ApproveAgencyInput {
+  agencyId: String!
+  notes: String
+}
+
+input RejectAgencyInput {
+  agencyId: String!
+  reason: String!
+}
+
+input SuspendAgencyInput {
+  agencyId: String!
+  reason: String!
+}
+
+input BanUserInput {
+  userId: String!
+  reason: String!
 }

@@ -5,38 +5,41 @@ import { MongooseModule } from '@nestjs/mongoose';
 import { GraphQLModule } from '@nestjs/graphql';
 import { JwtModule } from '@nestjs/jwt';
 import { MongoMemoryServer } from 'mongodb-memory-server';
-import { GqlJwtAuthGuard } from './common/guards/gql-jwt-auth.guard';
-import { GqlRolesGuard } from './common/guards/gql-roles.guard';
+import { GqlJwtAuthGuard } from './components/auth/guards/gql-jwt-auth.guard';
+import { GqlRolesGuard } from './components/auth/guards/gql-roles.guard';
 
-import databaseConfig from './config/database.config';
-import jwtConfig from './config/jwt.config';
-import { graphqlConfig } from './config/graphql.config';
+import databaseConfig from './libs/config/database.config';
+import jwtConfig from './libs/config/jwt.config';
+import { graphqlConfig } from './libs/config/graphql.config';
 
-import { UserModule } from './modules/user/user.module';
-import { AuthModule } from './modules/auth/auth.module';
-import { AgencyModule } from './modules/agency/agency.module';
-import { ServiceModule } from './modules/service/service.module';
-import { ApplicationModule } from './modules/application/application.module';
-import { ReviewModule } from './modules/review/review.module';
-import { HealthModule } from './common/health/health.module';
+import { HealthModule } from './components/health/health.module';
+import { UserModule } from './components/user/user.module';
+import { AuthModule } from './components/auth/auth.module';
+import { AgencyModule } from './components/agency/agency.module';
+import { ServiceModule } from './components/service/service.module';
+import { ApplicationModule } from './components/application/application.module';
+import { ReviewModule } from './components/review/review.module';
+import { CountryModule } from './components/country/country.module';
+import { FollowModule } from './components/follow/follow.module';
+import { MessagingModule } from './components/messaging/messaging.module';
+import { SubscriptionModule } from './components/subscription/subscription.module';
+import { AnalyticsModule } from './components/analytics/analytics.module';
+import { AdminModule } from './components/admin/admin.module';
 
 @Module({
   imports: [
-    // Configuration module
     ConfigModule.forRoot({
       isGlobal: true,
       envFilePath: '.env.local',
       load: [databaseConfig, jwtConfig],
     }),
 
-    // MongoDB
     MongooseModule.forRootAsync({
       useFactory: async (configService: ConfigService) => {
         const logger = new Logger('MongooseModule');
         let uri = configService.get<string>('database.mongodb.uri');
 
         if (uri) {
-          // Try connecting to the provided URI with a short timeout.
           try {
             const { MongoClient } = await import('mongodb');
             const client = new MongoClient(uri, { serverSelectionTimeoutMS: 3000 });
@@ -55,24 +58,18 @@ import { HealthModule } from './common/health/health.module';
           uri = mongod.getUri();
         }
 
-        return {
-          uri,
-          autoCreate: true,
-        };
+        return { uri, autoCreate: true };
       },
       inject: [ConfigService],
     }),
 
-    // GraphQL
     GraphQLModule.forRoot(graphqlConfig),
 
-    // JWT
     JwtModule.registerAsync({
+      global: true,
       useFactory: async (configService: ConfigService) => ({
         secret: configService.get('jwt.secret'),
-        signOptions: {
-          expiresIn: configService.get('jwt.expiresIn'),
-        },
+        signOptions: { expiresIn: configService.get('jwt.expiresIn') },
       }),
       inject: [ConfigService],
     }),
@@ -85,6 +82,12 @@ import { HealthModule } from './common/health/health.module';
     ServiceModule,
     ApplicationModule,
     ReviewModule,
+    CountryModule,
+    FollowModule,
+    MessagingModule,
+    SubscriptionModule,
+    AnalyticsModule,
+    AdminModule,
   ],
   providers: [
     {

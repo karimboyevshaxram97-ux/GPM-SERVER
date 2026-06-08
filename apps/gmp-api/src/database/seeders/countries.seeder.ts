@@ -1,0 +1,82 @@
+import { Injectable, Logger } from '@nestjs/common';
+import { InjectModel } from '@nestjs/mongoose';
+import { Model } from 'mongoose';
+import { Country, CountryDocument } from '../../schemas/Country.model';
+
+const COUNTRIES = [
+  { name: 'United States', code: 'US', code3: 'USA', isoNumeric: 840, region: 'Americas', subregion: 'Northern America', flag: '🇺🇸' },
+  { name: 'United Kingdom', code: 'GB', code3: 'GBR', isoNumeric: 826, region: 'Europe', subregion: 'Northern Europe', flag: '🇬🇧' },
+  { name: 'Germany', code: 'DE', code3: 'DEU', isoNumeric: 276, region: 'Europe', subregion: 'Western Europe', flag: '🇩🇪' },
+  { name: 'France', code: 'FR', code3: 'FRA', isoNumeric: 250, region: 'Europe', subregion: 'Western Europe', flag: '🇫🇷' },
+  { name: 'Canada', code: 'CA', code3: 'CAN', isoNumeric: 124, region: 'Americas', subregion: 'Northern America', flag: '🇨🇦' },
+  { name: 'Australia', code: 'AU', code3: 'AUS', isoNumeric: 36, region: 'Oceania', subregion: 'Australia and New Zealand', flag: '🇦🇺' },
+  { name: 'Japan', code: 'JP', code3: 'JPN', isoNumeric: 392, region: 'Asia', subregion: 'Eastern Asia', flag: '🇯🇵' },
+  { name: 'South Korea', code: 'KR', code3: 'KOR', isoNumeric: 410, region: 'Asia', subregion: 'Eastern Asia', flag: '🇰🇷' },
+  { name: 'China', code: 'CN', code3: 'CHN', isoNumeric: 156, region: 'Asia', subregion: 'Eastern Asia', flag: '🇨🇳' },
+  { name: 'India', code: 'IN', code3: 'IND', isoNumeric: 356, region: 'Asia', subregion: 'Southern Asia', flag: '🇮🇳' },
+  { name: 'Netherlands', code: 'NL', code3: 'NLD', isoNumeric: 528, region: 'Europe', subregion: 'Western Europe', flag: '🇳🇱' },
+  { name: 'Switzerland', code: 'CH', code3: 'CHE', isoNumeric: 756, region: 'Europe', subregion: 'Western Europe', flag: '🇨🇭' },
+  { name: 'Sweden', code: 'SE', code3: 'SWE', isoNumeric: 752, region: 'Europe', subregion: 'Northern Europe', flag: '🇸🇪' },
+  { name: 'Norway', code: 'NO', code3: 'NOR', isoNumeric: 578, region: 'Europe', subregion: 'Northern Europe', flag: '🇳🇴' },
+  { name: 'Denmark', code: 'DK', code3: 'DNK', isoNumeric: 208, region: 'Europe', subregion: 'Northern Europe', flag: '🇩🇰' },
+  { name: 'Finland', code: 'FI', code3: 'FIN', isoNumeric: 246, region: 'Europe', subregion: 'Northern Europe', flag: '🇫🇮' },
+  { name: 'Austria', code: 'AT', code3: 'AUT', isoNumeric: 40, region: 'Europe', subregion: 'Western Europe', flag: '🇦🇹' },
+  { name: 'Belgium', code: 'BE', code3: 'BEL', isoNumeric: 56, region: 'Europe', subregion: 'Western Europe', flag: '🇧🇪' },
+  { name: 'Spain', code: 'ES', code3: 'ESP', isoNumeric: 724, region: 'Europe', subregion: 'Southern Europe', flag: '🇪🇸' },
+  { name: 'Italy', code: 'IT', code3: 'ITA', isoNumeric: 380, region: 'Europe', subregion: 'Southern Europe', flag: '🇮🇹' },
+  { name: 'Portugal', code: 'PT', code3: 'PRT', isoNumeric: 620, region: 'Europe', subregion: 'Southern Europe', flag: '🇵🇹' },
+  { name: 'Poland', code: 'PL', code3: 'POL', isoNumeric: 616, region: 'Europe', subregion: 'Eastern Europe', flag: '🇵🇱' },
+  { name: 'Czech Republic', code: 'CZ', code3: 'CZE', isoNumeric: 203, region: 'Europe', subregion: 'Eastern Europe', flag: '🇨🇿' },
+  { name: 'Hungary', code: 'HU', code3: 'HUN', isoNumeric: 348, region: 'Europe', subregion: 'Eastern Europe', flag: '🇭🇺' },
+  { name: 'Romania', code: 'RO', code3: 'ROU', isoNumeric: 642, region: 'Europe', subregion: 'Eastern Europe', flag: '🇷🇴' },
+  { name: 'Russia', code: 'RU', code3: 'RUS', isoNumeric: 643, region: 'Europe', subregion: 'Eastern Europe', flag: '🇷🇺' },
+  { name: 'Turkey', code: 'TR', code3: 'TUR', isoNumeric: 792, region: 'Asia', subregion: 'Western Asia', flag: '🇹🇷' },
+  { name: 'United Arab Emirates', code: 'AE', code3: 'ARE', isoNumeric: 784, region: 'Asia', subregion: 'Western Asia', flag: '🇦🇪' },
+  { name: 'Saudi Arabia', code: 'SA', code3: 'SAU', isoNumeric: 682, region: 'Asia', subregion: 'Western Asia', flag: '🇸🇦' },
+  { name: 'Qatar', code: 'QA', code3: 'QAT', isoNumeric: 634, region: 'Asia', subregion: 'Western Asia', flag: '🇶🇦' },
+  { name: 'Kuwait', code: 'KW', code3: 'KWT', isoNumeric: 414, region: 'Asia', subregion: 'Western Asia', flag: '🇰🇼' },
+  { name: 'Malaysia', code: 'MY', code3: 'MYS', isoNumeric: 458, region: 'Asia', subregion: 'South-Eastern Asia', flag: '🇲🇾' },
+  { name: 'Singapore', code: 'SG', code3: 'SGP', isoNumeric: 702, region: 'Asia', subregion: 'South-Eastern Asia', flag: '🇸🇬' },
+  { name: 'Indonesia', code: 'ID', code3: 'IDN', isoNumeric: 360, region: 'Asia', subregion: 'South-Eastern Asia', flag: '🇮🇩' },
+  { name: 'Thailand', code: 'TH', code3: 'THA', isoNumeric: 764, region: 'Asia', subregion: 'South-Eastern Asia', flag: '🇹🇭' },
+  { name: 'Vietnam', code: 'VN', code3: 'VNM', isoNumeric: 704, region: 'Asia', subregion: 'South-Eastern Asia', flag: '🇻🇳' },
+  { name: 'Pakistan', code: 'PK', code3: 'PAK', isoNumeric: 586, region: 'Asia', subregion: 'Southern Asia', flag: '🇵🇰' },
+  { name: 'Bangladesh', code: 'BD', code3: 'BGD', isoNumeric: 50, region: 'Asia', subregion: 'Southern Asia', flag: '🇧🇩' },
+  { name: 'Brazil', code: 'BR', code3: 'BRA', isoNumeric: 76, region: 'Americas', subregion: 'South America', flag: '🇧🇷' },
+  { name: 'Mexico', code: 'MX', code3: 'MEX', isoNumeric: 484, region: 'Americas', subregion: 'Central America', flag: '🇲🇽' },
+  { name: 'Argentina', code: 'AR', code3: 'ARG', isoNumeric: 32, region: 'Americas', subregion: 'South America', flag: '🇦🇷' },
+  { name: 'Egypt', code: 'EG', code3: 'EGY', isoNumeric: 818, region: 'Africa', subregion: 'Northern Africa', flag: '🇪🇬' },
+  { name: 'South Africa', code: 'ZA', code3: 'ZAF', isoNumeric: 710, region: 'Africa', subregion: 'Southern Africa', flag: '🇿🇦' },
+  { name: 'Nigeria', code: 'NG', code3: 'NGA', isoNumeric: 566, region: 'Africa', subregion: 'Western Africa', flag: '🇳🇬' },
+  { name: 'New Zealand', code: 'NZ', code3: 'NZL', isoNumeric: 554, region: 'Oceania', subregion: 'Australia and New Zealand', flag: '🇳🇿' },
+  { name: 'Greece', code: 'GR', code3: 'GRC', isoNumeric: 300, region: 'Europe', subregion: 'Southern Europe', flag: '🇬🇷' },
+  { name: 'Ireland', code: 'IE', code3: 'IRL', isoNumeric: 372, region: 'Europe', subregion: 'Northern Europe', flag: '🇮🇪' },
+  // Central Asia — primary market
+  { name: 'Uzbekistan', code: 'UZ', code3: 'UZB', isoNumeric: 860, region: 'Asia', subregion: 'Central Asia', flag: '🇺🇿' },
+  { name: 'Kazakhstan', code: 'KZ', code3: 'KAZ', isoNumeric: 398, region: 'Asia', subregion: 'Central Asia', flag: '🇰🇿' },
+  { name: 'Kyrgyzstan', code: 'KG', code3: 'KGZ', isoNumeric: 417, region: 'Asia', subregion: 'Central Asia', flag: '🇰🇬' },
+  { name: 'Tajikistan', code: 'TJ', code3: 'TJK', isoNumeric: 762, region: 'Asia', subregion: 'Central Asia', flag: '🇹🇯' },
+  { name: 'Turkmenistan', code: 'TM', code3: 'TKM', isoNumeric: 795, region: 'Asia', subregion: 'Central Asia', flag: '🇹🇲' },
+  { name: 'Azerbaijan', code: 'AZ', code3: 'AZE', isoNumeric: 31, region: 'Asia', subregion: 'Western Asia', flag: '🇦🇿' },
+  { name: 'Georgia', code: 'GE', code3: 'GEO', isoNumeric: 268, region: 'Asia', subregion: 'Western Asia', flag: '🇬🇪' },
+  { name: 'Ukraine', code: 'UA', code3: 'UKR', isoNumeric: 804, region: 'Europe', subregion: 'Eastern Europe', flag: '🇺🇦' },
+  { name: 'Belarus', code: 'BY', code3: 'BLR', isoNumeric: 112, region: 'Europe', subregion: 'Eastern Europe', flag: '🇧🇾' },
+];
+
+@Injectable()
+export class CountriesSeeder {
+  private readonly logger = new Logger(CountriesSeeder.name);
+
+  constructor(@InjectModel(Country.name) private countryModel: Model<CountryDocument>) {}
+
+  async seed(): Promise<void> {
+    const existing = await this.countryModel.countDocuments().exec();
+    if (existing > 0) {
+      this.logger.log(`Countries already seeded (${existing} records). Skipping.`);
+      return;
+    }
+
+    await this.countryModel.insertMany(COUNTRIES);
+    this.logger.log(`Seeded ${COUNTRIES.length} countries.`);
+  }
+}
