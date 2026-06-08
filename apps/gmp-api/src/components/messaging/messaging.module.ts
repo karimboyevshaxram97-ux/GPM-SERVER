@@ -5,6 +5,7 @@ import { Message, MessageSchema } from '../../schemas/Message.model';
 import { MessagingService } from './messaging.service';
 import { MessagingResolver } from './messaging.resolver';
 import { MessagingGateway } from './messaging.gateway';
+import { AuthModule } from '../auth/auth.module';
 
 @Module({
   imports: [
@@ -12,6 +13,7 @@ import { MessagingGateway } from './messaging.gateway';
       { name: Conversation.name, schema: ConversationSchema },
       { name: Message.name, schema: MessageSchema },
     ]),
+    AuthModule,
   ],
   providers: [MessagingService, MessagingResolver, MessagingGateway],
   exports: [MessagingService],

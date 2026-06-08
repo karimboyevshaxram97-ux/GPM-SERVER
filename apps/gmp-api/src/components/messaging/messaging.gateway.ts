@@ -1,91 +1,134 @@
+import { Logger } from '@nestjs/common';
 import {
-  WebSocketGateway,
-  WebSocketServer,
-  SubscribeMessage,
-  MessageBody,
-  ConnectedSocket,
+  OnGatewayInit,
   OnGatewayConnection,
   OnGatewayDisconnect,
+  SubscribeMessage,
+  WebSocketGateway,
+  WebSocketServer,
 } from '@nestjs/websockets';
-import { Server, Socket } from 'ws';
-import { Logger } from '@nestjs/common';
-import { MessagingService } from './messaging.service';
+import { Server } from 'ws';
+import * as WebSocket from 'ws';
+import * as Url from 'url';
+import { AuthService } from '../auth/auth.service';
+import { UserDocument } from '../../schemas/User.model';
 
-@WebSocketGateway({ path: '/messaging', cors: { origin: '*' } })
-export class MessagingGateway implements OnGatewayConnection, OnGatewayDisconnect {
+interface MessagePayload {
+  event: string;
+  text: string;
+  authUser: UserDocument | null;
+}
+
+interface InfoPayload {
+  event: string;
+  totalClients: number;
+  authUser: UserDocument | null;
+  action: 'joined' | 'left';
+}
+
+@WebSocketGateway({ transports: ['websocket'], secure: false })
+export class MessagingGateway implements OnGatewayInit, OnGatewayConnection, OnGatewayDisconnect {
+  private readonly logger = new Logger('MessagingGateway');
+  private summaryClients = 0;
+  private clientsAuthMap = new Map<WebSocket, UserDocument | null>();
+  private messagesList: MessagePayload[] = [];
+
   @WebSocketServer()
   server: Server;
 
-  private readonly logger = new Logger(MessagingGateway.name);
-  private userSockets = new Map<string, Socket>();
+  constructor(private readonly authService: AuthService) {}
 
-  constructor(private readonly messagingService: MessagingService) {}
-
-  handleConnection(client: Socket) {
-    this.logger.log(`Client connected: ${(client as any).id}`);
+  afterInit(server: Server): void {
+    this.logger.log(`WebSocket initialized — total: [${this.summaryClients}]`);
   }
 
-  handleDisconnect(client: Socket) {
-    // Remove from userSockets map
-    for (const [userId, socket] of this.userSockets.entries()) {
-      if (socket === client) {
-        this.userSockets.delete(userId);
-        this.broadcastUserStatus(userId, false);
-        break;
+  async handleConnection(client: WebSocket, req: any): Promise<void> {
+    const authUser = await this.retrieveAuth(req);
+    this.summaryClients++;
+    this.clientsAuthMap.set(client, authUser);
+
+    const nick = authUser ? `${authUser.firstName} ${authUser.lastName}` : 'Guest';
+    this.logger.verbose(`CONNECTED [${nick}] — total: [${this.summaryClients}]`);
+
+    const infoMsg: InfoPayload = {
+      event: 'info',
+      totalClients: this.summaryClients,
+      authUser,
+      action: 'joined',
+    };
+    this.emitMessage(infoMsg);
+    client.send(JSON.stringify({ event: 'getMessages', list: this.messagesList }));
+  }
+
+  handleDisconnect(client: WebSocket): void {
+    const authUser = this.clientsAuthMap.get(client) ?? null;
+    this.summaryClients--;
+    this.clientsAuthMap.delete(client);
+
+    const nick = authUser ? `${authUser.firstName} ${authUser.lastName}` : 'Guest';
+    this.logger.verbose(`DISCONNECTED [${nick}] — total: [${this.summaryClients}]`);
+
+    const infoMsg: InfoPayload = {
+      event: 'info',
+      totalClients: this.summaryClients,
+      authUser,
+      action: 'left',
+    };
+    this.broadcastMessage(client, infoMsg);
+  }
+
+  @SubscribeMessage('message')
+  async handleMessage(client: WebSocket, payload: string): Promise<void> {
+    const authUser = this.clientsAuthMap.get(client) ?? null;
+    const newMessage: MessagePayload = { event: 'message', text: payload, authUser };
+
+    const nick = authUser ? `${authUser.firstName} ${authUser.lastName}` : 'Guest';
+    this.logger.verbose(`MESSAGE [${nick}]: ${payload}`);
+
+    this.messagesList.push(newMessage);
+    if (this.messagesList.length > 5) this.messagesList.splice(0, this.messagesList.length - 5);
+
+    this.emitMessage(newMessage);
+  }
+
+  private async retrieveAuth(req: any): Promise<UserDocument | null> {
+    try {
+      const { token } = Url.parse(req.url, true).query;
+      return await this.authService.verifyToken(token as string);
+    } catch {
+      return null;
+    }
+  }
+
+  /** Barcha clientlarga yuboradi */
+  private emitMessage(message: InfoPayload | MessagePayload): void {
+    this.server.clients.forEach((client) => {
+      if (client.readyState === WebSocket.OPEN) {
+        client.send(JSON.stringify(message));
       }
-    }
-    this.logger.log(`Client disconnected`);
-  }
-
-  @SubscribeMessage('user:join')
-  handleUserJoin(@MessageBody() data: { userId: string }, @ConnectedSocket() client: Socket) {
-    this.userSockets.set(data.userId, client);
-    this.broadcastUserStatus(data.userId, true);
-    return { event: 'user:joined', data: { userId: data.userId } };
-  }
-
-  @SubscribeMessage('conversation:join')
-  handleJoinConversation(@MessageBody() data: { conversationId: string }, @ConnectedSocket() client: Socket) {
-    (client as any).conversationId = data.conversationId;
-    return { event: 'conversation:joined', data };
-  }
-
-  @SubscribeMessage('message:send')
-  async handleSendMessage(
-    @MessageBody() data: { conversationId: string; senderId: string; text: string },
-    @ConnectedSocket() client: Socket,
-  ) {
-    const message = await this.messagingService.sendMessage(data.conversationId, data.senderId, data.text);
-    this.broadcastToConversation(data.conversationId, 'message:new', message);
-    return { event: 'message:sent', data: message };
-  }
-
-  @SubscribeMessage('user:typing')
-  handleTyping(
-    @MessageBody() data: { conversationId: string; userId: string; isTyping: boolean },
-    @ConnectedSocket() client: Socket,
-  ) {
-    this.broadcastToConversation(data.conversationId, 'user:typing', data);
-  }
-
-  emitToUser(userId: string, event: string, data: any) {
-    const socket = this.userSockets.get(userId);
-    if (socket) {
-      (socket as any).emit(event, data);
-    }
-  }
-
-  private broadcastUserStatus(userId: string, isOnline: boolean) {
-    this.server?.clients?.forEach((client: any) => {
-      client.send(JSON.stringify({ event: isOnline ? 'user:online' : 'user:offline', data: { userId } }));
     });
   }
 
-  private broadcastToConversation(conversationId: string, event: string, data: any) {
-    this.server?.clients?.forEach((client: any) => {
-      if (client.conversationId === conversationId) {
-        client.send(JSON.stringify({ event, data }));
+  /** Yuboruvchidan boshqa barcha clientlarga yuboradi */
+  private broadcastMessage(sender: WebSocket, message: InfoPayload | MessagePayload): void {
+    this.server.clients.forEach((client) => {
+      if (client !== sender && client.readyState === WebSocket.OPEN) {
+        client.send(JSON.stringify(message));
       }
     });
+  }
+
+  /** Faqat bitta clientga yuboradi */
+  private sendToClient(client: WebSocket, message: any): void {
+    if (client.readyState === WebSocket.OPEN) {
+      client.send(JSON.stringify(message));
+    }
   }
 }
+
+/*
+ * MESSAGE TARGETS:
+ * 1. sendToClient  — faqat bitta client
+ * 2. broadcastMessage — yuboruvchidan boshqa hammaga
+ * 3. emitMessage   — barcha clientlarga
+ */

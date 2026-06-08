@@ -104,6 +104,17 @@ export class AuthService {
     return true;
   }
 
+  async verifyToken(token: string): Promise<any | null> {
+    try {
+      const secret =
+        this.configService.get<string>('jwt.secret') ?? 'super-secret-key-change-in-production';
+      const payload = this.jwtService.verify<{ sub: string }>(token, { secret });
+      return this.userService.findById(payload.sub);
+    } catch {
+      return null;
+    }
+  }
+
   private generateAccessToken(user: any): string {
     const secret = this.configService.get<string>('jwt.secret') ?? 'super-secret-key-change-in-production';
     const expiresIn = this.configService.get<string>('jwt.expiresIn') ?? '3600';

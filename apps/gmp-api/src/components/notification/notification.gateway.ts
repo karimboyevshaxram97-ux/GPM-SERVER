@@ -1,50 +1,68 @@
+import { Logger } from '@nestjs/common';
 import {
-  WebSocketGateway,
-  WebSocketServer,
-  SubscribeMessage,
-  MessageBody,
-  ConnectedSocket,
+  OnGatewayInit,
   OnGatewayConnection,
   OnGatewayDisconnect,
+  WebSocketGateway,
+  WebSocketServer,
 } from '@nestjs/websockets';
-import { Logger } from '@nestjs/common';
-import { Server, WebSocket } from 'ws';
-import { NotificationDocument } from '../../schemas/Notification.model';
+import { Server } from 'ws';
+import * as WebSocket from 'ws';
+import * as Url from 'url';
+import { AuthService } from '../auth/auth.service';
+import { UserDocument } from '../../schemas/User.model';
 
-@WebSocketGateway({ path: '/notifications', cors: { origin: '*' } })
-export class NotificationGateway implements OnGatewayConnection, OnGatewayDisconnect {
+@WebSocketGateway({ path: '/notifications', transports: ['websocket'], secure: false })
+export class NotificationGateway implements OnGatewayInit, OnGatewayConnection, OnGatewayDisconnect {
+  private readonly logger = new Logger('NotificationGateway');
+  private summaryClients = 0;
+  private clientsAuthMap = new Map<WebSocket, UserDocument | null>();
+
   @WebSocketServer()
   server: Server;
 
-  private readonly logger = new Logger(NotificationGateway.name);
-  private readonly userSockets = new Map<string, WebSocket>();
+  constructor(private readonly authService: AuthService) {}
 
-  handleConnection(client: WebSocket) {
-    this.logger.debug(`Notification client connected`);
+  afterInit(server: Server): void {
+    this.logger.log(`Notification WS initialized — total: [${this.summaryClients}]`);
   }
 
-  handleDisconnect(client: WebSocket) {
-    for (const [userId, socket] of this.userSockets.entries()) {
-      if (socket === client) {
-        this.userSockets.delete(userId);
-        break;
+  async handleConnection(client: WebSocket, req: any): Promise<void> {
+    const authUser = await this.retrieveAuth(req);
+    this.summaryClients++;
+    this.clientsAuthMap.set(client, authUser);
+
+    const nick = authUser ? `${authUser.firstName} ${authUser.lastName}` : 'Guest';
+    this.logger.verbose(`CONNECTED [${nick}] — total: [${this.summaryClients}]`);
+  }
+
+  handleDisconnect(client: WebSocket): void {
+    const authUser = this.clientsAuthMap.get(client);
+    this.summaryClients--;
+    this.clientsAuthMap.delete(client);
+
+    const nick = authUser ? `${authUser.firstName} ${authUser.lastName}` : 'Guest';
+    this.logger.verbose(`DISCONNECTED [${nick}] — total: [${this.summaryClients}]`);
+  }
+
+  /** Verified userId bo'yicha foydalanuvchiga notification yuboradi */
+  emitToUser(userId: string, notification: any): void {
+    this.clientsAuthMap.forEach((authUser, client) => {
+      if (
+        authUser?._id?.toString() === userId &&
+        client.readyState === WebSocket.OPEN
+      ) {
+        client.send(JSON.stringify({ event: 'notification:new', data: notification }));
       }
-    }
+    });
   }
 
-  @SubscribeMessage('notification:join')
-  handleJoin(
-    @MessageBody() data: { userId: string },
-    @ConnectedSocket() client: WebSocket,
-  ) {
-    this.userSockets.set(data.userId, client);
-    return { event: 'notification:joined', data: { userId: data.userId } };
-  }
-
-  emitToUser(userId: string, notification: Partial<NotificationDocument>): void {
-    const socket = this.userSockets.get(userId);
-    if (socket?.readyState === WebSocket.OPEN) {
-      socket.send(JSON.stringify({ event: 'notification:new', data: notification }));
+  private async retrieveAuth(req: any): Promise<UserDocument | null> {
+    try {
+      const { token } = Url.parse(req.url, true).query;
+      return await this.authService.verifyToken(token as string);
+    } catch {
+      return null;
     }
   }
 }

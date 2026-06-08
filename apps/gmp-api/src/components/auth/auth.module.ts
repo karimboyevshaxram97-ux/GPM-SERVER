@@ -21,5 +21,6 @@ import { GqlRolesGuard } from './guards/gql-roles.guard';
     UserModule,
   ],
   providers: [AuthService, AuthResolver, GqlJwtAuthGuard, GqlRolesGuard],
+  exports: [AuthService, GqlJwtAuthGuard, GqlRolesGuard],
 })
 export class AuthModule {}
