@@ -8,6 +8,7 @@ import { AgenciesInquiryResult } from '../../libs/dto/agency/agencies-inquiry.re
 import { CreateAgencyInput, UpdateAgencyInput } from '../../libs/dto/agency/agency.input';
 import { GqlRolesGuard } from '../auth/guards/gql-roles.guard';
 import { Public } from '../auth/decorators/public.decorator';
+import { WithoutAuth } from '../auth/guards/without.guard';
 import { Roles } from '../auth/decorators/roles.decorator';
 import { UserRole, Message } from '../../libs/enums';
 import { CurrentUser } from '../auth/decorators/current-user.decorator';
@@ -19,11 +20,14 @@ export class AgencyResolver {
     private readonly serviceService: ServiceService,
   ) {}
 
-  @Public()
+  @WithoutAuth()
   @Query(() => AgenciesInquiryResult, { name: 'getAgencies' })
-  async getAgencies(@Args('input') input: AgenciesInquiryInput): Promise<AgenciesInquiryResult> {
+  async getAgencies(
+    @Args('input') input: AgenciesInquiryInput,
+    @CurrentUser() user: any,
+  ): Promise<AgenciesInquiryResult> {
     console.log('Query: getAgencies');
-    return this.agencyService.getAgencies(input);
+    return this.agencyService.getAgencies(input, user?._id?.toString());
   }
 
   @Public()

@@ -1,5 +1,6 @@
 import { ObjectType, Field, ID } from '@nestjs/graphql';
 import { ServiceStatus, ServiceType, ServiceVisibility } from '../../enums';
+import { MeLiked } from '../like/like.type';
 
 @ObjectType()
 export class ServiceGraphType {
@@ -59,6 +60,9 @@ export class ServiceGraphType {
 
   @Field(() => [String])
   tags: string[];
+
+  @Field(() => [MeLiked], { nullable: true })
+  meLiked?: MeLiked[];
 
   @Field()
   createdAt: Date;

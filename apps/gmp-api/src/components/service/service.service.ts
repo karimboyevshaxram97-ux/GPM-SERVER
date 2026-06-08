@@ -5,14 +5,15 @@ import { Service, ServiceDocument } from '../../schemas/Service.model';
 import { CreateServiceInput, UpdateServiceInput } from '../../libs/dto/service/service.input';
 import { ServicesInquiryInput } from '../../libs/dto/service/services-inquiry.input';
 import { ServicesInquiryResult } from '../../libs/dto/service/services-inquiry.result';
-import { Direction, ServiceStatus, ServiceVisibility } from '../../libs/enums';
+import { Direction, ServiceStatus, ServiceVisibility, LikeTargetType } from '../../libs/enums';
 import { Message, T, StatisticModifier } from '../../libs';
+import { lookupAuthUserLiked } from '../../libs/config/aggregation';
 
 @Injectable()
 export class ServiceService {
   constructor(@InjectModel(Service.name) private readonly serviceModel: Model<ServiceDocument>) {}
 
-  async getServices(input: ServicesInquiryInput): Promise<ServicesInquiryResult> {
+  async getServices(input: ServicesInquiryInput, userId?: string): Promise<ServicesInquiryResult> {
     const {
       text,
       serviceType,
@@ -53,6 +54,7 @@ export class ServiceService {
 
     const sortDir = direction === Direction.ASC ? 1 : -1;
     const skip = (page - 1) * limit;
+    const userObjId = userId ? new Types.ObjectId(userId) : null;
 
     const result = await this.serviceModel.aggregate<ServicesInquiryResult>([
       { $match: match },
@@ -68,7 +70,11 @@ export class ServiceService {
       { $sort: { [sort]: sortDir } },
       {
         $facet: {
-          list: [{ $skip: skip }, { $limit: limit }],
+          list: [
+            { $skip: skip },
+            { $limit: limit },
+            lookupAuthUserLiked(userObjId, '$_id', LikeTargetType.SERVICE),
+          ],
           metaCounter: [{ $count: 'total' }],
         },
       },

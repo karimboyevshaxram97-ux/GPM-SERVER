@@ -8,6 +8,7 @@ import { ServicesInquiryResult } from '../../libs/dto/service/services-inquiry.r
 import { CreateServiceInput, UpdateServiceInput } from '../../libs/dto/service/service.input';
 import { GqlRolesGuard } from '../auth/guards/gql-roles.guard';
 import { Public } from '../auth/decorators/public.decorator';
+import { WithoutAuth } from '../auth/guards/without.guard';
 import { Roles } from '../auth/decorators/roles.decorator';
 import { UserRole, Message } from '../../libs/enums';
 import { CurrentUser } from '../auth/decorators/current-user.decorator';
@@ -19,11 +20,14 @@ export class ServiceResolver {
     private readonly agencyService: AgencyService,
   ) {}
 
-  @Public()
+  @WithoutAuth()
   @Query(() => ServicesInquiryResult, { name: 'getServices' })
-  async getServices(@Args('input') input: ServicesInquiryInput): Promise<ServicesInquiryResult> {
+  async getServices(
+    @Args('input') input: ServicesInquiryInput,
+    @CurrentUser() user: any,
+  ): Promise<ServicesInquiryResult> {
     console.log('Query: getServices');
-    return this.serviceService.getServices(input);
+    return this.serviceService.getServices(input, user?._id?.toString());
   }
 
   @Public()

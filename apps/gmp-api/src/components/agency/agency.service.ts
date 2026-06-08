@@ -5,14 +5,15 @@ import { Agency, AgencyDocument } from '../../schemas/Agency.model';
 import { CreateAgencyInput, UpdateAgencyInput } from '../../libs/dto/agency/agency.input';
 import { AgenciesInquiryInput } from '../../libs/dto/agency/agencies-inquiry.input';
 import { AgenciesInquiryResult } from '../../libs/dto/agency/agencies-inquiry.result';
-import { Direction } from '../../libs/enums';
+import { Direction, LikeTargetType } from '../../libs/enums';
 import { Message, T, StatisticModifier } from '../../libs';
+import { lookupAuthUserLiked, lookupAuthUserFollowed } from '../../libs/config/aggregation';
 
 @Injectable()
 export class AgencyService {
   constructor(@InjectModel(Agency.name) private readonly agencyModel: Model<AgencyDocument>) {}
 
-  async getAgencies(input: AgenciesInquiryInput): Promise<AgenciesInquiryResult> {
+  async getAgencies(input: AgenciesInquiryInput, userId?: string): Promise<AgenciesInquiryResult> {
     const { text, status, verificationStatus, country, sort, direction, page, limit } = input;
 
     const match: T = {};
@@ -30,13 +31,19 @@ export class AgencyService {
 
     const sortDir = direction === Direction.ASC ? 1 : -1;
     const skip = (page - 1) * limit;
+    const userObjId = userId ? new Types.ObjectId(userId) : null;
 
     const result = await this.agencyModel.aggregate<AgenciesInquiryResult>([
       { $match: match },
       { $sort: { [sort]: sortDir } },
       {
         $facet: {
-          list: [{ $skip: skip }, { $limit: limit }],
+          list: [
+            { $skip: skip },
+            { $limit: limit },
+            lookupAuthUserLiked(userObjId, '$_id', LikeTargetType.AGENCY),
+            lookupAuthUserFollowed(userObjId, '$_id'),
+          ],
           metaCounter: [{ $count: 'total' }],
         },
       },

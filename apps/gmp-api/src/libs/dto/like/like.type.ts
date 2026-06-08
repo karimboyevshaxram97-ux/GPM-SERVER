@@ -8,3 +8,15 @@ export class LikeResult {
   @Field(() => Int)
   likeCount: number;
 }
+
+@ObjectType()
+export class MeLiked {
+  @Field({ nullable: true })
+  user?: string;
+
+  @Field({ nullable: true })
+  targetId?: string;
+
+  @Field({ nullable: true })
+  myFavorite?: boolean;
+}

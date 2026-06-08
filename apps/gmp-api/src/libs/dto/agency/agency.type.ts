@@ -1,5 +1,7 @@
 import { ObjectType, Field, ID } from '@nestjs/graphql';
 import { AgencyStatus, AgencyVerificationStatus, SubscriptionStatus } from '../../enums';
+import { MeLiked } from '../like/like.type';
+import { MeFollowed } from '../follow/follow.type';
 
 @ObjectType()
 export class AgencyType {
@@ -59,6 +61,12 @@ export class AgencyType {
 
   @Field()
   likeCount: number;
+
+  @Field(() => [MeLiked], { nullable: true })
+  meLiked?: MeLiked[];
+
+  @Field(() => [MeFollowed], { nullable: true })
+  meFollowed?: MeFollowed[];
 
   @Field()
   createdAt: Date;
