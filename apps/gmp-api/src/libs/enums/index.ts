@@ -4,3 +4,4 @@ export * from './domain.enum';
 export * from './review.enum';
 export * from './messaging.enum';
 export * from './inquiry.enum';
+export * from './notification.enum';
