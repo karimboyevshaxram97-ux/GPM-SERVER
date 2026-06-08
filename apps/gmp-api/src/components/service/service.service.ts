@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, BadRequestException, InternalServerErrorException } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model, Types } from 'mongoose';
 import { Service, ServiceDocument } from '../../schemas/Service.model';
@@ -6,6 +6,7 @@ import { CreateServiceInput, UpdateServiceInput } from '../../libs/dto/service/s
 import { ServicesInquiryInput } from '../../libs/dto/service/services-inquiry.input';
 import { ServicesInquiryResult } from '../../libs/dto/service/services-inquiry.result';
 import { Direction, ServiceStatus, ServiceVisibility } from '../../libs/enums';
+import { Message, T, StatisticModifier } from '../../libs';
 
 @Injectable()
 export class ServiceService {
@@ -27,7 +28,7 @@ export class ServiceService {
       limit,
     } = input;
 
-    const match: Record<string, any> = {
+    const match: T = {
       visibility: ServiceVisibility.PUBLIC,
       status: status ?? ServiceStatus.ACTIVE,
     };
@@ -73,6 +74,7 @@ export class ServiceService {
       },
     ]);
 
+    if (!result.length) throw new InternalServerErrorException(Message.NO_DATA_FOUND);
     return result[0];
   }
 
@@ -85,24 +87,37 @@ export class ServiceService {
   }
 
   async create(input: CreateServiceInput, agencyId: string): Promise<ServiceDocument> {
-    const service = new this.serviceModel({
-      ...input,
-      agency: new Types.ObjectId(agencyId),
-    });
-    return service.save();
+    try {
+      return await this.serviceModel.create({
+        ...input,
+        agency: new Types.ObjectId(agencyId),
+      });
+    } catch (err: any) {
+      console.log('Error, ServiceService.create:', err.message);
+      throw new BadRequestException(Message.CREATE_FAILED);
+    }
   }
 
-  async update(id: string, input: UpdateServiceInput): Promise<ServiceDocument | null> {
-    return this.serviceModel.findByIdAndUpdate(id, input, { new: true }).exec();
+  async update(id: string, input: UpdateServiceInput): Promise<ServiceDocument> {
+    const result = await this.serviceModel.findByIdAndUpdate(id, input, { new: true }).exec();
+    if (!result) throw new InternalServerErrorException(Message.UPDATE_FAILED);
+    return result;
   }
 
-  async delete(id: string): Promise<ServiceDocument | null> {
-    return this.serviceModel.findByIdAndDelete(id).exec();
+  async delete(id: string): Promise<ServiceDocument> {
+    const result = await this.serviceModel.findByIdAndDelete(id).exec();
+    if (!result) throw new InternalServerErrorException(Message.REMOVE_FAILED);
+    return result;
   }
 
-  async incrementField(id: string | Types.ObjectId, field: string, amount = 1): Promise<void> {
-    await this.serviceModel
-      .findByIdAndUpdate(id, { $inc: { [field]: amount } })
+  async serviceStatsEditor(input: StatisticModifier): Promise<ServiceDocument | null> {
+    const { _id, targetKey, modifier } = input;
+    return this.serviceModel
+      .findByIdAndUpdate(_id, { $inc: { [targetKey]: modifier } }, { new: true })
       .exec();
+  }
+
+  async updateReviewStats(id: string, averageRating: number, totalReviews: number): Promise<void> {
+    await this.serviceModel.findByIdAndUpdate(id, { averageRating, totalReviews }).exec();
   }
 }

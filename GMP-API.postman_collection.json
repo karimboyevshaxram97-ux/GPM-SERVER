@@ -1,0 +1,1014 @@
+{
+  "info": {
+    "name": "GMP-API",
+    "description": "GMP Server — GraphQL API (NestJS + Apollo Server + MongoDB)\n\nBase URL: http://localhost:3007\nGraphQL Endpoint: POST /graphql\nFile Upload: POST /upload/image\n\nAuth: Bearer token (JWT)\nHeaders: Authorization: Bearer {{ACCESS_TOKEN}}\n\nWebSocket:\n  ws://localhost:3007          (Messaging)\n  ws://localhost:3007/notifications  (Notifications)\n  ?token=<ACCESS_TOKEN>",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    { "key": "BASE_URL",      "value": "http://localhost:3007" },
+    { "key": "GQL",           "value": "http://localhost:3007/graphql" },
+    { "key": "ACCESS_TOKEN",  "value": "" },
+    { "key": "REFRESH_TOKEN", "value": "" },
+    { "key": "USER_ID",       "value": "" },
+    { "key": "AGENCY_ID",     "value": "" },
+    { "key": "SERVICE_ID",    "value": "" },
+    { "key": "APPLICATION_ID","value": "" },
+    { "key": "PLAN_ID",       "value": "" },
+    { "key": "CONVERSATION_ID","value": "" },
+    { "key": "NOTIFICATION_ID","value": "" }
+  ],
+  "item": [
+
+    {
+      "name": "🔐 Auth",
+      "item": [
+        {
+          "name": "register",
+          "event": [{ "listen": "test", "script": { "exec": ["if(pm.response.code===200){const d=pm.response.json().data?.register;if(d){pm.collectionVariables.set('ACCESS_TOKEN',d.accessToken);pm.collectionVariables.set('REFRESH_TOKEN',d.refreshToken);pm.collectionVariables.set('USER_ID',d.user._id);}}"], "type": "text/javascript" } }],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"query\": \"mutation Register($input: RegisterInput!) { register(input: $input) { accessToken refreshToken user { _id email firstName lastName role } } }\",\n  \"variables\": {\n    \"input\": {\n      \"email\": \"test@example.com\",\n      \"password\": \"password123\",\n      \"firstName\": \"John\",\n      \"lastName\": \"Doe\"\n    }\n  }\n}"
+            },
+            "url": { "raw": "{{GQL}}", "host": ["{{GQL}}"] }
+          }
+        },
+        {
+          "name": "login",
+          "event": [{ "listen": "test", "script": { "exec": ["if(pm.response.code===200){const d=pm.response.json().data?.login;if(d){pm.collectionVariables.set('ACCESS_TOKEN',d.accessToken);pm.collectionVariables.set('REFRESH_TOKEN',d.refreshToken);pm.collectionVariables.set('USER_ID',d.user._id);}}"], "type": "text/javascript" } }],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"query\": \"mutation Login($input: LoginInput!) { login(input: $input) { accessToken refreshToken user { _id email firstName lastName role status } } }\",\n  \"variables\": {\n    \"input\": {\n      \"email\": \"test@example.com\",\n      \"password\": \"password123\"\n    }\n  }\n}"
+            },
+            "url": { "raw": "{{GQL}}", "host": ["{{GQL}}"] }
+          }
+        },
+        {
+          "name": "refreshToken",
+          "event": [{ "listen": "test", "script": { "exec": ["if(pm.response.code===200){const d=pm.response.json().data?.refreshToken;if(d){pm.collectionVariables.set('ACCESS_TOKEN',d.accessToken);pm.collectionVariables.set('REFRESH_TOKEN',d.refreshToken);}}"], "type": "text/javascript" } }],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"query\": \"mutation RefreshToken($input: RefreshTokenInput!) { refreshToken(input: $input) { accessToken refreshToken user { _id email } } }\",\n  \"variables\": {\n    \"input\": {\n      \"refreshToken\": \"{{REFRESH_TOKEN}}\"\n    }\n  }\n}"
+            },
+            "url": { "raw": "{{GQL}}", "host": ["{{GQL}}"] }
+          }
+        },
+        {
+          "name": "me",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }, { "key": "Authorization", "value": "Bearer {{ACCESS_TOKEN}}" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"query\": \"query Me { me { _id email firstName lastName role status createdAt } }\"\n}"
+            },
+            "url": { "raw": "{{GQL}}", "host": ["{{GQL}}"] }
+          }
+        },
+        {
+          "name": "logout",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }, { "key": "Authorization", "value": "Bearer {{ACCESS_TOKEN}}" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"query\": \"mutation Logout { logout }\"\n}"
+            },
+            "url": { "raw": "{{GQL}}", "host": ["{{GQL}}"] }
+          }
+        }
+      ]
+    },
+
+    {
+      "name": "👤 User",
+      "item": [
+        {
+          "name": "member (public — by ID)",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"query\": \"query Member($id: String!) { member(id: $id) { _id email firstName lastName role status createdAt } }\",\n  \"variables\": {\n    \"id\": \"{{USER_ID}}\"\n  }\n}"
+            },
+            "url": { "raw": "{{GQL}}", "host": ["{{GQL}}"] }
+          }
+        },
+        {
+          "name": "members [ADMIN ONLY]",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }, { "key": "Authorization", "value": "Bearer {{ACCESS_TOKEN}}" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"query\": \"query Members { members { _id email firstName lastName role status createdAt } }\"\n}"
+            },
+            "url": { "raw": "{{GQL}}", "host": ["{{GQL}}"] }
+          }
+        }
+      ]
+    },
+
+    {
+      "name": "🏢 Agency",
+      "item": [
+        {
+          "name": "getAgencies (public — paginated)",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"query\": \"query GetAgencies($input: AgenciesInquiryInput!) { getAgencies(input: $input) { list { _id name slug email status verificationStatus totalServices totalFollowers viewCount likeCount averageRating } metaCounter { total } } }\",\n  \"variables\": {\n    \"input\": {\n      \"page\": 1,\n      \"limit\": 10,\n      \"sort\": \"createdAt\",\n      \"direction\": \"DESC\"\n    }\n  }\n}"
+            },
+            "url": { "raw": "{{GQL}}", "host": ["{{GQL}}"] }
+          }
+        },
+        {
+          "name": "getAgencies — filter by text, country, status",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"query\": \"query GetAgencies($input: AgenciesInquiryInput!) { getAgencies(input: $input) { list { _id name slug email status verificationStatus country } metaCounter { total } } }\",\n  \"variables\": {\n    \"input\": {\n      \"text\": \"\",\n      \"status\": \"ACTIVE\",\n      \"verificationStatus\": \"VERIFIED\",\n      \"country\": \"UZ\",\n      \"sort\": \"averageRating\",\n      \"direction\": \"DESC\",\n      \"page\": 1,\n      \"limit\": 10\n    }\n  }\n}"
+            },
+            "url": { "raw": "{{GQL}}", "host": ["{{GQL}}"] }
+          }
+        },
+        {
+          "name": "getAgency (public — by ID)",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"query\": \"query GetAgency($id: String!) { getAgency(id: $id) { _id name slug email description status verificationStatus operatingCountries phoneNumber website totalServices totalFollowers viewCount likeCount averageRating agencyRank createdAt } }\",\n  \"variables\": {\n    \"id\": \"{{AGENCY_ID}}\"\n  }\n}"
+            },
+            "url": { "raw": "{{GQL}}", "host": ["{{GQL}}"] }
+          }
+        },
+        {
+          "name": "getAgencyBySlug (public)",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"query\": \"query GetAgencyBySlug($slug: String!) { getAgencyBySlug(slug: $slug) { _id name slug email status verificationStatus } }\",\n  \"variables\": {\n    \"slug\": \"my-agency-name\"\n  }\n}"
+            },
+            "url": { "raw": "{{GQL}}", "host": ["{{GQL}}"] }
+          }
+        },
+        {
+          "name": "createAgency",
+          "event": [{ "listen": "test", "script": { "exec": ["if(pm.response.code===200){const d=pm.response.json().data?.createAgency;if(d)pm.collectionVariables.set('AGENCY_ID',d._id);}"], "type": "text/javascript" } }],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }, { "key": "Authorization", "value": "Bearer {{ACCESS_TOKEN}}" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"query\": \"mutation CreateAgency($input: CreateAgencyInput!) { createAgency(input: $input) { _id name slug email status verificationStatus } }\",\n  \"variables\": {\n    \"input\": {\n      \"name\": \"Test Agency\",\n      \"email\": \"agency@example.com\",\n      \"description\": \"We help students study abroad\",\n      \"operatingCountries\": [\"UZ\", \"KZ\"],\n      \"phoneNumber\": \"+998901234567\",\n      \"website\": \"https://testagency.com\"\n    }\n  }\n}"
+            },
+            "url": { "raw": "{{GQL}}", "host": ["{{GQL}}"] }
+          }
+        },
+        {
+          "name": "updateAgency [ADMIN ONLY]",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }, { "key": "Authorization", "value": "Bearer {{ACCESS_TOKEN}}" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"query\": \"mutation UpdateAgency($id: String!, $input: UpdateAgencyInput!) { updateAgency(id: $id, input: $input) { _id name description } }\",\n  \"variables\": {\n    \"id\": \"{{AGENCY_ID}}\",\n    \"input\": {\n      \"description\": \"Updated description\",\n      \"phoneNumber\": \"+998901234567\"\n    }\n  }\n}"
+            },
+            "url": { "raw": "{{GQL}}", "host": ["{{GQL}}"] }
+          }
+        },
+        {
+          "name": "deleteAgency [ADMIN ONLY]",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }, { "key": "Authorization", "value": "Bearer {{ACCESS_TOKEN}}" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"query\": \"mutation DeleteAgency($id: String!) { deleteAgency(id: $id) }\",\n  \"variables\": { \"id\": \"{{AGENCY_ID}}\" }\n}"
+            },
+            "url": { "raw": "{{GQL}}", "host": ["{{GQL}}"] }
+          }
+        }
+      ]
+    },
+
+    {
+      "name": "🛠 Service",
+      "item": [
+        {
+          "name": "getServices (public — paginated)",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"query\": \"query GetServices($input: ServicesInquiryInput!) { getServices(input: $input) { list { _id name serviceType destinationCountry sourceCountries price status visibility viewCount likeCount averageRating agency { _id name } } metaCounter { total } } }\",\n  \"variables\": {\n    \"input\": {\n      \"page\": 1,\n      \"limit\": 10,\n      \"sort\": \"createdAt\",\n      \"direction\": \"DESC\"\n    }\n  }\n}"
+            },
+            "url": { "raw": "{{GQL}}", "host": ["{{GQL}}"] }
+          }
+        },
+        {
+          "name": "getServices — filter",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"query\": \"query GetServices($input: ServicesInquiryInput!) { getServices(input: $input) { list { _id name serviceType destinationCountry price } metaCounter { total } } }\",\n  \"variables\": {\n    \"input\": {\n      \"serviceType\": \"STUDY_ABROAD\",\n      \"destinationCountry\": \"KR\",\n      \"minPrice\": 500,\n      \"maxPrice\": 3000,\n      \"sort\": \"price\",\n      \"direction\": \"ASC\",\n      \"page\": 1,\n      \"limit\": 10\n    }\n  }\n}"
+            },
+            "url": { "raw": "{{GQL}}", "host": ["{{GQL}}"] }
+          }
+        },
+        {
+          "name": "getService (public — by ID)",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"query\": \"query GetService($id: String!) { getService(id: $id) { _id name description serviceType destinationCountry sourceCountries price processingTime status visibility viewCount likeCount averageRating serviceRank agency { _id name slug } } }\",\n  \"variables\": {\n    \"id\": \"{{SERVICE_ID}}\"\n  }\n}"
+            },
+            "url": { "raw": "{{GQL}}", "host": ["{{GQL}}"] }
+          }
+        },
+        {
+          "name": "getServicesByAgency (public)",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"query\": \"query GetServicesByAgency($agencyId: String!) { getServicesByAgency(agencyId: $agencyId) { _id name serviceType price status } }\",\n  \"variables\": {\n    \"agencyId\": \"{{AGENCY_ID}}\"\n  }\n}"
+            },
+            "url": { "raw": "{{GQL}}", "host": ["{{GQL}}"] }
+          }
+        },
+        {
+          "name": "createService",
+          "event": [{ "listen": "test", "script": { "exec": ["if(pm.response.code===200){const d=pm.response.json().data?.createService;if(d)pm.collectionVariables.set('SERVICE_ID',d._id);}"], "type": "text/javascript" } }],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }, { "key": "Authorization", "value": "Bearer {{ACCESS_TOKEN}}" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"query\": \"mutation CreateService($agencyId: String!, $input: CreateServiceInput!) { createService(agencyId: $agencyId, input: $input) { _id name serviceType price status } }\",\n  \"variables\": {\n    \"agencyId\": \"{{AGENCY_ID}}\",\n    \"input\": {\n      \"name\": \"Korea University Admission\",\n      \"description\": \"We help students get admission to top Korean universities\",\n      \"serviceType\": \"STUDY_ABROAD\",\n      \"destinationCountry\": \"KR\",\n      \"sourceCountries\": [\"UZ\", \"KZ\"],\n      \"price\": 1500,\n      \"processingTime\": \"3-6 months\",\n      \"tags\": [\"korea\", \"university\", \"admission\"],\n      \"visibility\": \"PUBLIC\"\n    }\n  }\n}"
+            },
+            "url": { "raw": "{{GQL}}", "host": ["{{GQL}}"] }
+          }
+        },
+        {
+          "name": "updateService [ADMIN ONLY]",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }, { "key": "Authorization", "value": "Bearer {{ACCESS_TOKEN}}" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"query\": \"mutation UpdateService($id: String!, $input: UpdateServiceInput!) { updateService(id: $id, input: $input) { _id name price visibility } }\",\n  \"variables\": {\n    \"id\": \"{{SERVICE_ID}}\",\n    \"input\": {\n      \"price\": 1200,\n      \"visibility\": \"PUBLIC\"\n    }\n  }\n}"
+            },
+            "url": { "raw": "{{GQL}}", "host": ["{{GQL}}"] }
+          }
+        }
+      ]
+    },
+
+    {
+      "name": "📋 Application",
+      "item": [
+        {
+          "name": "createApplication",
+          "event": [{ "listen": "test", "script": { "exec": ["if(pm.response.code===200){const d=pm.response.json().data?.createApplication;if(d)pm.collectionVariables.set('APPLICATION_ID',d._id);}"], "type": "text/javascript" } }],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }, { "key": "Authorization", "value": "Bearer {{ACCESS_TOKEN}}" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"query\": \"mutation CreateApplication($input: CreateApplicationInput!) { createApplication(input: $input) { _id status notes user service agency createdAt } }\",\n  \"variables\": {\n    \"input\": {\n      \"serviceId\": \"{{SERVICE_ID}}\",\n      \"notes\": \"I am very interested in this service\",\n      \"documents\": []\n    }\n  }\n}"
+            },
+            "url": { "raw": "{{GQL}}", "host": ["{{GQL}}"] }
+          }
+        },
+        {
+          "name": "myApplications",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }, { "key": "Authorization", "value": "Bearer {{ACCESS_TOKEN}}" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"query\": \"query MyApplications { myApplications { _id status notes createdAt service agency } }\"\n}"
+            },
+            "url": { "raw": "{{GQL}}", "host": ["{{GQL}}"] }
+          }
+        },
+        {
+          "name": "applicationsByAgency",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }, { "key": "Authorization", "value": "Bearer {{ACCESS_TOKEN}}" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"query\": \"query ApplicationsByAgency($agencyId: String!) { applicationsByAgency(agencyId: $agencyId) { _id status notes user service createdAt } }\",\n  \"variables\": {\n    \"agencyId\": \"{{AGENCY_ID}}\"\n  }\n}"
+            },
+            "url": { "raw": "{{GQL}}", "host": ["{{GQL}}"] }
+          }
+        },
+        {
+          "name": "applicationsByService",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }, { "key": "Authorization", "value": "Bearer {{ACCESS_TOKEN}}" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"query\": \"query ApplicationsByService($serviceId: String!) { applicationsByService(serviceId: $serviceId) { _id status notes user createdAt } }\",\n  \"variables\": {\n    \"serviceId\": \"{{SERVICE_ID}}\"\n  }\n}"
+            },
+            "url": { "raw": "{{GQL}}", "host": ["{{GQL}}"] }
+          }
+        },
+        {
+          "name": "updateApplicationStatus",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }, { "key": "Authorization", "value": "Bearer {{ACCESS_TOKEN}}" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"query\": \"mutation UpdateApplicationStatus($id: String!, $input: UpdateApplicationInput!) { updateApplicationStatus(id: $id, input: $input) { _id status rejectionReason } }\",\n  \"variables\": {\n    \"id\": \"{{APPLICATION_ID}}\",\n    \"input\": {\n      \"status\": \"UNDER_REVIEW\",\n      \"notes\": \"We are reviewing your application\"\n    }\n  }\n}"
+            },
+            "url": { "raw": "{{GQL}}", "host": ["{{GQL}}"] }
+          }
+        },
+        {
+          "name": "applications [ADMIN ONLY]",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }, { "key": "Authorization", "value": "Bearer {{ACCESS_TOKEN}}" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"query\": \"query Applications { applications { _id status user service agency createdAt } }\"\n}"
+            },
+            "url": { "raw": "{{GQL}}", "host": ["{{GQL}}"] }
+          }
+        }
+      ]
+    },
+
+    {
+      "name": "⭐ Review",
+      "item": [
+        {
+          "name": "reviewsByAgency (public)",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"query\": \"query ReviewsByAgency($agencyId: String!) { reviewsByAgency(agencyId: $agencyId) { _id rating comment user agency service createdAt } }\",\n  \"variables\": {\n    \"agencyId\": \"{{AGENCY_ID}}\"\n  }\n}"
+            },
+            "url": { "raw": "{{GQL}}", "host": ["{{GQL}}"] }
+          }
+        },
+        {
+          "name": "reviewsByService (public)",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"query\": \"query ReviewsByService($serviceId: String!) { reviewsByService(serviceId: $serviceId) { _id rating comment user createdAt } }\",\n  \"variables\": {\n    \"serviceId\": \"{{SERVICE_ID}}\"\n  }\n}"
+            },
+            "url": { "raw": "{{GQL}}", "host": ["{{GQL}}"] }
+          }
+        },
+        {
+          "name": "createReview",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }, { "key": "Authorization", "value": "Bearer {{ACCESS_TOKEN}}" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"query\": \"mutation CreateReview($input: CreateReviewInput!) { createReview(input: $input) { _id rating comment agency service createdAt } }\",\n  \"variables\": {\n    \"input\": {\n      \"agencyId\": \"{{AGENCY_ID}}\",\n      \"serviceId\": \"{{SERVICE_ID}}\",\n      \"rating\": 5,\n      \"comment\": \"Excellent service! Highly recommended.\"\n    }\n  }\n}"
+            },
+            "url": { "raw": "{{GQL}}", "host": ["{{GQL}}"] }
+          }
+        }
+      ]
+    },
+
+    {
+      "name": "🔔 Notification",
+      "item": [
+        {
+          "name": "getMyNotifications",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }, { "key": "Authorization", "value": "Bearer {{ACCESS_TOKEN}}" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"query\": \"query GetMyNotifications($input: NotificationsInquiryInput!) { getMyNotifications(input: $input) { list { _id type message isRead targetId targetType createdAt } metaCounter { total } } }\",\n  \"variables\": {\n    \"input\": {\n      \"page\": 1,\n      \"limit\": 20\n    }\n  }\n}"
+            },
+            "url": { "raw": "{{GQL}}", "host": ["{{GQL}}"] }
+          }
+        },
+        {
+          "name": "getMyNotifications — unread only",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }, { "key": "Authorization", "value": "Bearer {{ACCESS_TOKEN}}" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"query\": \"query GetMyNotifications($input: NotificationsInquiryInput!) { getMyNotifications(input: $input) { list { _id type message isRead createdAt } metaCounter { total } } }\",\n  \"variables\": {\n    \"input\": {\n      \"isRead\": false,\n      \"page\": 1,\n      \"limit\": 20\n    }\n  }\n}"
+            },
+            "url": { "raw": "{{GQL}}", "host": ["{{GQL}}"] }
+          }
+        },
+        {
+          "name": "getUnreadNotificationCount",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }, { "key": "Authorization", "value": "Bearer {{ACCESS_TOKEN}}" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"query\": \"query GetUnreadNotificationCount { getUnreadNotificationCount }\"\n}"
+            },
+            "url": { "raw": "{{GQL}}", "host": ["{{GQL}}"] }
+          }
+        },
+        {
+          "name": "markNotificationAsRead",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }, { "key": "Authorization", "value": "Bearer {{ACCESS_TOKEN}}" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"query\": \"mutation MarkNotificationAsRead($notificationId: String!) { markNotificationAsRead(notificationId: $notificationId) { _id isRead } }\",\n  \"variables\": {\n    \"notificationId\": \"{{NOTIFICATION_ID}}\"\n  }\n}"
+            },
+            "url": { "raw": "{{GQL}}", "host": ["{{GQL}}"] }
+          }
+        },
+        {
+          "name": "markAllNotificationsAsRead",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }, { "key": "Authorization", "value": "Bearer {{ACCESS_TOKEN}}" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"query\": \"mutation MarkAllNotificationsAsRead { markAllNotificationsAsRead }\"\n}"
+            },
+            "url": { "raw": "{{GQL}}", "host": ["{{GQL}}"] }
+          }
+        }
+      ]
+    },
+
+    {
+      "name": "💬 Messaging",
+      "item": [
+        {
+          "name": "createOrGetConversation",
+          "event": [{ "listen": "test", "script": { "exec": ["if(pm.response.code===200){const d=pm.response.json().data?.createOrGetConversation;if(d)pm.collectionVariables.set('CONVERSATION_ID',d._id);}"], "type": "text/javascript" } }],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }, { "key": "Authorization", "value": "Bearer {{ACCESS_TOKEN}}" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"query\": \"mutation CreateOrGetConversation($input: CreateConversationInput!) { createOrGetConversation(input: $input) { _id participants { _id firstName } agencyId isBlocked createdAt } }\",\n  \"variables\": {\n    \"input\": {\n      \"recipientId\": \"RECIPIENT_USER_ID_HERE\",\n      \"agencyId\": \"{{AGENCY_ID}}\",\n      \"initialMessage\": \"Hello, I have a question about your service\"\n    }\n  }\n}"
+            },
+            "url": { "raw": "{{GQL}}", "host": ["{{GQL}}"] }
+          }
+        },
+        {
+          "name": "myConversations",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }, { "key": "Authorization", "value": "Bearer {{ACCESS_TOKEN}}" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"query\": \"query MyConversations { myConversations { _id participants { _id firstName } lastMessage unreadCount isBlocked updatedAt } }\"\n}"
+            },
+            "url": { "raw": "{{GQL}}", "host": ["{{GQL}}"] }
+          }
+        },
+        {
+          "name": "conversationMessages",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }, { "key": "Authorization", "value": "Bearer {{ACCESS_TOKEN}}" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"query\": \"query ConversationMessages($conversationId: String!, $limit: Int, $skip: Int) { conversationMessages(conversationId: $conversationId, limit: $limit, skip: $skip) { _id text sender isEdited isDeleted attachmentUrls createdAt } }\",\n  \"variables\": {\n    \"conversationId\": \"{{CONVERSATION_ID}}\",\n    \"limit\": 50,\n    \"skip\": 0\n  }\n}"
+            },
+            "url": { "raw": "{{GQL}}", "host": ["{{GQL}}"] }
+          }
+        },
+        {
+          "name": "sendMessage",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }, { "key": "Authorization", "value": "Bearer {{ACCESS_TOKEN}}" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"query\": \"mutation SendMessage($input: SendMessageInput!) { sendMessage(input: $input) { _id text sender createdAt } }\",\n  \"variables\": {\n    \"input\": {\n      \"conversationId\": \"{{CONVERSATION_ID}}\",\n      \"text\": \"Hello! I need more information about visa services.\",\n      \"attachmentUrls\": []\n    }\n  }\n}"
+            },
+            "url": { "raw": "{{GQL}}", "host": ["{{GQL}}"] }
+          }
+        },
+        {
+          "name": "markConversationAsRead",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }, { "key": "Authorization", "value": "Bearer {{ACCESS_TOKEN}}" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"query\": \"mutation MarkConversationAsRead($conversationId: String!) { markConversationAsRead(conversationId: $conversationId) }\",\n  \"variables\": {\n    \"conversationId\": \"{{CONVERSATION_ID}}\"\n  }\n}"
+            },
+            "url": { "raw": "{{GQL}}", "host": ["{{GQL}}"] }
+          }
+        },
+        {
+          "name": "blockConversation",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }, { "key": "Authorization", "value": "Bearer {{ACCESS_TOKEN}}" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"query\": \"mutation BlockConversation($conversationId: String!) { blockConversation(conversationId: $conversationId) { _id isBlocked } }\",\n  \"variables\": {\n    \"conversationId\": \"{{CONVERSATION_ID}}\"\n  }\n}"
+            },
+            "url": { "raw": "{{GQL}}", "host": ["{{GQL}}"] }
+          }
+        }
+      ]
+    },
+
+    {
+      "name": "❤️ Like & 👁 View",
+      "item": [
+        {
+          "name": "toggleLike (agency)",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }, { "key": "Authorization", "value": "Bearer {{ACCESS_TOKEN}}" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"query\": \"mutation ToggleLike($targetId: String!, $targetType: LikeTargetType!) { toggleLike(targetId: $targetId, targetType: $targetType) { likeCount isLiked } }\",\n  \"variables\": {\n    \"targetId\": \"{{AGENCY_ID}}\",\n    \"targetType\": \"AGENCY\"\n  }\n}"
+            },
+            "url": { "raw": "{{GQL}}", "host": ["{{GQL}}"] }
+          }
+        },
+        {
+          "name": "toggleLike (service)",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }, { "key": "Authorization", "value": "Bearer {{ACCESS_TOKEN}}" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"query\": \"mutation ToggleLike($targetId: String!, $targetType: LikeTargetType!) { toggleLike(targetId: $targetId, targetType: $targetType) { likeCount isLiked } }\",\n  \"variables\": {\n    \"targetId\": \"{{SERVICE_ID}}\",\n    \"targetType\": \"SERVICE\"\n  }\n}"
+            },
+            "url": { "raw": "{{GQL}}", "host": ["{{GQL}}"] }
+          }
+        },
+        {
+          "name": "getLikeStatus",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }, { "key": "Authorization", "value": "Bearer {{ACCESS_TOKEN}}" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"query\": \"query GetLikeStatus($targetId: String!, $targetType: LikeTargetType!) { getLikeStatus(targetId: $targetId, targetType: $targetType) { likeCount isLiked } }\",\n  \"variables\": {\n    \"targetId\": \"{{AGENCY_ID}}\",\n    \"targetType\": \"AGENCY\"\n  }\n}"
+            },
+            "url": { "raw": "{{GQL}}", "host": ["{{GQL}}"] }
+          }
+        },
+        {
+          "name": "recordView (optional auth)",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"query\": \"mutation RecordView($targetId: String!, $targetType: ViewTargetType!) { recordView(targetId: $targetId, targetType: $targetType) }\",\n  \"variables\": {\n    \"targetId\": \"{{AGENCY_ID}}\",\n    \"targetType\": \"AGENCY\"\n  }\n}"
+            },
+            "url": { "raw": "{{GQL}}", "host": ["{{GQL}}"] }
+          }
+        },
+        {
+          "name": "getViewCount (public)",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"query\": \"query GetViewCount($targetId: String!, $targetType: ViewTargetType!) { getViewCount(targetId: $targetId, targetType: $targetType) }\",\n  \"variables\": {\n    \"targetId\": \"{{AGENCY_ID}}\",\n    \"targetType\": \"AGENCY\"\n  }\n}"
+            },
+            "url": { "raw": "{{GQL}}", "host": ["{{GQL}}"] }
+          }
+        }
+      ]
+    },
+
+    {
+      "name": "👥 Follow",
+      "item": [
+        {
+          "name": "followAgency",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }, { "key": "Authorization", "value": "Bearer {{ACCESS_TOKEN}}" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"query\": \"mutation FollowAgency($agencyId: String!) { followAgency(agencyId: $agencyId) { _id follower following notificationsEnabled createdAt } }\",\n  \"variables\": {\n    \"agencyId\": \"{{AGENCY_ID}}\"\n  }\n}"
+            },
+            "url": { "raw": "{{GQL}}", "host": ["{{GQL}}"] }
+          }
+        },
+        {
+          "name": "unfollowAgency",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }, { "key": "Authorization", "value": "Bearer {{ACCESS_TOKEN}}" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"query\": \"mutation UnfollowAgency($agencyId: String!) { unfollowAgency(agencyId: $agencyId) }\",\n  \"variables\": {\n    \"agencyId\": \"{{AGENCY_ID}}\"\n  }\n}"
+            },
+            "url": { "raw": "{{GQL}}", "host": ["{{GQL}}"] }
+          }
+        },
+        {
+          "name": "toggleFollowNotifications",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }, { "key": "Authorization", "value": "Bearer {{ACCESS_TOKEN}}" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"query\": \"mutation ToggleFollowNotifications($agencyId: String!) { toggleFollowNotifications(agencyId: $agencyId) { _id notificationsEnabled } }\",\n  \"variables\": {\n    \"agencyId\": \"{{AGENCY_ID}}\"\n  }\n}"
+            },
+            "url": { "raw": "{{GQL}}", "host": ["{{GQL}}"] }
+          }
+        },
+        {
+          "name": "followStatus",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }, { "key": "Authorization", "value": "Bearer {{ACCESS_TOKEN}}" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"query\": \"query FollowStatus($agencyId: String!) { followStatus(agencyId: $agencyId) { isFollowing notificationsEnabled } }\",\n  \"variables\": {\n    \"agencyId\": \"{{AGENCY_ID}}\"\n  }\n}"
+            },
+            "url": { "raw": "{{GQL}}", "host": ["{{GQL}}"] }
+          }
+        },
+        {
+          "name": "myFollowingAgencies",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }, { "key": "Authorization", "value": "Bearer {{ACCESS_TOKEN}}" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"query\": \"query MyFollowingAgencies { myFollowingAgencies { _id follower following notificationsEnabled createdAt } }\"\n}"
+            },
+            "url": { "raw": "{{GQL}}", "host": ["{{GQL}}"] }
+          }
+        },
+        {
+          "name": "agencyFollowers (optional auth)",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"query\": \"query AgencyFollowers($agencyId: String!) { agencyFollowers(agencyId: $agencyId) { _id follower notificationsEnabled createdAt } }\",\n  \"variables\": {\n    \"agencyId\": \"{{AGENCY_ID}}\"\n  }\n}"
+            },
+            "url": { "raw": "{{GQL}}", "host": ["{{GQL}}"] }
+          }
+        }
+      ]
+    },
+
+    {
+      "name": "🌍 Country",
+      "item": [
+        {
+          "name": "countries (public)",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"query\": \"query Countries($input: CountryFilterInput) { countries(input: $input) { _id name code region isActive flag } }\",\n  \"variables\": {\n    \"input\": {\n      \"isActive\": true\n    }\n  }\n}"
+            },
+            "url": { "raw": "{{GQL}}", "host": ["{{GQL}}"] }
+          }
+        },
+        {
+          "name": "country by ID (public)",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"query\": \"query Country($id: String!) { country(id: $id) { _id name code region isActive } }\",\n  \"variables\": { \"id\": \"COUNTRY_ID\" }\n}"
+            },
+            "url": { "raw": "{{GQL}}", "host": ["{{GQL}}"] }
+          }
+        },
+        {
+          "name": "countryByCode (public)",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"query\": \"query CountryByCode($code: String!) { countryByCode(code: $code) { _id name code region isActive } }\",\n  \"variables\": { \"code\": \"UZ\" }\n}"
+            },
+            "url": { "raw": "{{GQL}}", "host": ["{{GQL}}"] }
+          }
+        },
+        {
+          "name": "createCountry [ADMIN ONLY]",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }, { "key": "Authorization", "value": "Bearer {{ACCESS_TOKEN}}" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"query\": \"mutation CreateCountry($input: CreateCountryInput!) { createCountry(input: $input) { _id name code isActive } }\",\n  \"variables\": {\n    \"input\": {\n      \"name\": \"Uzbekistan\",\n      \"code\": \"UZ\",\n      \"code3\": \"UZB\",\n      \"region\": \"Asia\",\n      \"subregion\": \"Central Asia\",\n      \"flag\": \"🇺🇿\"\n    }\n  }\n}"
+            },
+            "url": { "raw": "{{GQL}}", "host": ["{{GQL}}"] }
+          }
+        },
+        {
+          "name": "toggleCountryActive [ADMIN ONLY]",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }, { "key": "Authorization", "value": "Bearer {{ACCESS_TOKEN}}" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"query\": \"mutation ToggleCountryActive($id: String!) { toggleCountryActive(id: $id) { _id name isActive } }\",\n  \"variables\": { \"id\": \"COUNTRY_ID\" }\n}"
+            },
+            "url": { "raw": "{{GQL}}", "host": ["{{GQL}}"] }
+          }
+        }
+      ]
+    },
+
+    {
+      "name": "💳 Subscription",
+      "item": [
+        {
+          "name": "subscriptionPlans (public)",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"query\": \"query SubscriptionPlans { subscriptionPlans { _id name description monthlyPrice annualPrice maxServices maxTeamMembers maxApplicationsPerMonth supportLevel features { name included limit } } }\"\n}"
+            },
+            "url": { "raw": "{{GQL}}", "host": ["{{GQL}}"] }
+          }
+        },
+        {
+          "name": "subscriptionPlan by ID (public)",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"query\": \"query SubscriptionPlan($id: String!) { subscriptionPlan(id: $id) { _id name monthlyPrice annualPrice features { name included } } }\",\n  \"variables\": { \"id\": \"{{PLAN_ID}}\" }\n}"
+            },
+            "url": { "raw": "{{GQL}}", "host": ["{{GQL}}"] }
+          }
+        },
+        {
+          "name": "subscribeToPlan",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }, { "key": "Authorization", "value": "Bearer {{ACCESS_TOKEN}}" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"query\": \"mutation SubscribeToPlan($input: SubscribeToPlanInput!) { subscribeToPlan(input: $input) { _id agency plan billingCycle status startDate endDate autoRenew } }\",\n  \"variables\": {\n    \"input\": {\n      \"agencyId\": \"{{AGENCY_ID}}\",\n      \"planId\": \"{{PLAN_ID}}\",\n      \"billingCycle\": \"MONTHLY\",\n      \"autoRenew\": true\n    }\n  }\n}"
+            },
+            "url": { "raw": "{{GQL}}", "host": ["{{GQL}}"] }
+          }
+        },
+        {
+          "name": "agencySubscriptions",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }, { "key": "Authorization", "value": "Bearer {{ACCESS_TOKEN}}" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"query\": \"query AgencySubscriptions($agencyId: String!) { agencySubscriptions(agencyId: $agencyId) { _id plan billingCycle status startDate endDate } }\",\n  \"variables\": {\n    \"agencyId\": \"{{AGENCY_ID}}\"\n  }\n}"
+            },
+            "url": { "raw": "{{GQL}}", "host": ["{{GQL}}"] }
+          }
+        },
+        {
+          "name": "createSubscriptionPlan [ADMIN ONLY]",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }, { "key": "Authorization", "value": "Bearer {{ACCESS_TOKEN}}" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"query\": \"mutation CreateSubscriptionPlan($input: CreateSubscriptionPlanInput!) { createSubscriptionPlan(input: $input) { _id name monthlyPrice annualPrice status } }\",\n  \"variables\": {\n    \"input\": {\n      \"name\": \"Professional\",\n      \"description\": \"For growing agencies\",\n      \"monthlyPrice\": 49.99,\n      \"annualPrice\": 499.99,\n      \"maxServices\": 20,\n      \"maxTeamMembers\": 5,\n      \"maxApplicationsPerMonth\": 100,\n      \"supportLevel\": \"STANDARD\",\n      \"features\": [\n        { \"name\": \"Analytics Dashboard\", \"included\": true },\n        { \"name\": \"Priority Support\", \"included\": false }\n      ]\n    }\n  }\n}"
+            },
+            "url": { "raw": "{{GQL}}", "host": ["{{GQL}}"] }
+          }
+        }
+      ]
+    },
+
+    {
+      "name": "📊 Analytics",
+      "item": [
+        {
+          "name": "agencyStats",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }, { "key": "Authorization", "value": "Bearer {{ACCESS_TOKEN}}" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"query\": \"query AgencyStats($agencyId: String!, $from: DateTime, $to: DateTime) { agencyStats(agencyId: $agencyId, from: $from, to: $to) { date views likes applications reviews followers } }\",\n  \"variables\": {\n    \"agencyId\": \"{{AGENCY_ID}}\"\n  }\n}"
+            },
+            "url": { "raw": "{{GQL}}", "host": ["{{GQL}}"] }
+          }
+        },
+        {
+          "name": "serviceStats",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }, { "key": "Authorization", "value": "Bearer {{ACCESS_TOKEN}}" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"query\": \"query ServiceStats($serviceId: String!, $from: DateTime, $to: DateTime) { serviceStats(serviceId: $serviceId, from: $from, to: $to) { date views likes applications } }\",\n  \"variables\": {\n    \"serviceId\": \"{{SERVICE_ID}}\"\n  }\n}"
+            },
+            "url": { "raw": "{{GQL}}", "host": ["{{GQL}}"] }
+          }
+        }
+      ]
+    },
+
+    {
+      "name": "🔧 Admin",
+      "item": [
+        {
+          "name": "platformStats [ADMIN ONLY]",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }, { "key": "Authorization", "value": "Bearer {{ACCESS_TOKEN}}" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"query\": \"query PlatformStats { platformStats { totalUsers totalAgencies totalServices totalApplications totalReviews activeSubscriptions totalRevenue } }\"\n}"
+            },
+            "url": { "raw": "{{GQL}}", "host": ["{{GQL}}"] }
+          }
+        },
+        {
+          "name": "pendingVerifications [ADMIN ONLY]",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }, { "key": "Authorization", "value": "Bearer {{ACCESS_TOKEN}}" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"query\": \"query PendingVerifications { pendingVerifications { _id name email verificationStatus createdAt } }\"\n}"
+            },
+            "url": { "raw": "{{GQL}}", "host": ["{{GQL}}"] }
+          }
+        },
+        {
+          "name": "approveAgency [ADMIN ONLY]",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }, { "key": "Authorization", "value": "Bearer {{ACCESS_TOKEN}}" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"query\": \"mutation ApproveAgency($input: ApproveAgencyInput!) { approveAgency(input: $input) { _id name verificationStatus } }\",\n  \"variables\": {\n    \"input\": { \"agencyId\": \"{{AGENCY_ID}}\" }\n  }\n}"
+            },
+            "url": { "raw": "{{GQL}}", "host": ["{{GQL}}"] }
+          }
+        },
+        {
+          "name": "rejectAgency [ADMIN ONLY]",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }, { "key": "Authorization", "value": "Bearer {{ACCESS_TOKEN}}" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"query\": \"mutation RejectAgency($input: RejectAgencyInput!) { rejectAgency(input: $input) { _id name verificationStatus } }\",\n  \"variables\": {\n    \"input\": {\n      \"agencyId\": \"{{AGENCY_ID}}\",\n      \"reason\": \"Incomplete documentation provided\"\n    }\n  }\n}"
+            },
+            "url": { "raw": "{{GQL}}", "host": ["{{GQL}}"] }
+          }
+        },
+        {
+          "name": "suspendAgency [ADMIN ONLY]",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }, { "key": "Authorization", "value": "Bearer {{ACCESS_TOKEN}}" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"query\": \"mutation SuspendAgency($input: SuspendAgencyInput!) { suspendAgency(input: $input) { _id name status } }\",\n  \"variables\": {\n    \"input\": { \"agencyId\": \"{{AGENCY_ID}}\" }\n  }\n}"
+            },
+            "url": { "raw": "{{GQL}}", "host": ["{{GQL}}"] }
+          }
+        },
+        {
+          "name": "banUser [ADMIN ONLY]",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }, { "key": "Authorization", "value": "Bearer {{ACCESS_TOKEN}}" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"query\": \"mutation BanUser($input: BanUserInput!) { banUser(input: $input) { _id email status } }\",\n  \"variables\": {\n    \"input\": { \"userId\": \"{{USER_ID}}\" }\n  }\n}"
+            },
+            "url": { "raw": "{{GQL}}", "host": ["{{GQL}}"] }
+          }
+        },
+        {
+          "name": "unbanUser [ADMIN ONLY]",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }, { "key": "Authorization", "value": "Bearer {{ACCESS_TOKEN}}" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"query\": \"mutation UnbanUser($userId: String!) { unbanUser(userId: $userId) { _id email status } }\",\n  \"variables\": { \"userId\": \"{{USER_ID}}\" }\n}"
+            },
+            "url": { "raw": "{{GQL}}", "host": ["{{GQL}}"] }
+          }
+        }
+      ]
+    },
+
+    {
+      "name": "📁 Upload (REST)",
+      "item": [
+        {
+          "name": "uploadImage — avatar",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Authorization", "value": "Bearer {{ACCESS_TOKEN}}" }],
+            "body": {
+              "mode": "formdata",
+              "formdata": [
+                { "key": "file", "type": "file", "src": "", "description": "JPEG/PNG/WebP, max 5MB" }
+              ]
+            },
+            "url": {
+              "raw": "{{BASE_URL}}/upload/image?type=avatar",
+              "host": ["{{BASE_URL}}"],
+              "path": ["upload", "image"],
+              "query": [{ "key": "type", "value": "avatar", "description": "avatar | logo | cover | image" }]
+            }
+          }
+        },
+        {
+          "name": "uploadImage — logo",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Authorization", "value": "Bearer {{ACCESS_TOKEN}}" }],
+            "body": {
+              "mode": "formdata",
+              "formdata": [{ "key": "file", "type": "file", "src": "" }]
+            },
+            "url": {
+              "raw": "{{BASE_URL}}/upload/image?type=logo",
+              "host": ["{{BASE_URL}}"],
+              "path": ["upload", "image"],
+              "query": [{ "key": "type", "value": "logo" }]
+            }
+          }
+        }
+      ]
+    },
+
+    {
+      "name": "🩺 Health",
+      "item": [
+        {
+          "name": "health (public)",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"query\": \"query Health { health }\"\n}"
+            },
+            "url": { "raw": "{{GQL}}", "host": ["{{GQL}}"] }
+          }
+        }
+      ]
+    }
+
+  ]
+}

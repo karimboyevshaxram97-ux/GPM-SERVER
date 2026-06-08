@@ -1,4 +1,4 @@
-// Re-export all enums from one place
+export * from './common.enum';
 export * from './user.enum';
 export * from './domain.enum';
 export * from './review.enum';

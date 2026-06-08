@@ -1,14 +1,15 @@
 import { Resolver, Query, Mutation, Args } from '@nestjs/graphql';
-import { UseGuards, NotFoundException } from '@nestjs/common';
+import { UseGuards, InternalServerErrorException } from '@nestjs/common';
 import { ApplicationService } from './application.service';
 import { ServiceService } from '../service/service.service';
 import { AgencyService } from '../agency/agency.service';
 import { NotificationService } from '../notification/notification.service';
 import { ApplicationType } from '../../libs/dto/application/application.type';
 import { CreateApplicationInput, UpdateApplicationInput } from '../../libs/dto/application/application.input';
-import { GqlJwtAuthGuard } from '../auth/guards/gql-jwt-auth.guard';
+import { GqlRolesGuard } from '../auth/guards/gql-roles.guard';
+import { Roles } from '../auth/decorators/roles.decorator';
 import { CurrentUser } from '../auth/decorators/current-user.decorator';
-import { NotificationType } from '../../libs/enums';
+import { NotificationType, UserRole, Message } from '../../libs/enums';
 
 @Resolver(() => ApplicationType)
 export class ApplicationResolver {
@@ -19,35 +20,40 @@ export class ApplicationResolver {
     private readonly notificationService: NotificationService,
   ) {}
 
+  @UseGuards(GqlRolesGuard)
+  @Roles(UserRole.SUPER_ADMIN)
   @Query(() => [ApplicationType], { name: 'applications' })
   async applications(): Promise<ApplicationType[]> {
+    console.log('Query: applications');
     return this.applicationService.findAll() as any;
   }
 
-  @UseGuards(GqlJwtAuthGuard)
   @Query(() => [ApplicationType], { name: 'myApplications' })
   async myApplications(@CurrentUser() user: any): Promise<ApplicationType[]> {
+    console.log('Query: myApplications');
     return this.applicationService.findByUser(user._id.toString()) as any;
   }
 
   @Query(() => [ApplicationType], { name: 'applicationsByAgency' })
   async applicationsByAgency(@Args('agencyId') agencyId: string): Promise<ApplicationType[]> {
+    console.log('Query: applicationsByAgency');
     return this.applicationService.findByAgency(agencyId) as any;
   }
 
   @Query(() => [ApplicationType], { name: 'applicationsByService' })
   async applicationsByService(@Args('serviceId') serviceId: string): Promise<ApplicationType[]> {
+    console.log('Query: applicationsByService');
     return this.applicationService.findByService(serviceId) as any;
   }
 
-  @UseGuards(GqlJwtAuthGuard)
   @Mutation(() => ApplicationType, { name: 'createApplication' })
   async createApplication(
     @Args('input') input: CreateApplicationInput,
     @CurrentUser() user: any,
   ): Promise<ApplicationType> {
+    console.log('Mutation: createApplication');
     const service = await this.serviceService.findById(input.serviceId);
-    if (!service) throw new NotFoundException('Service not found');
+    if (!service) throw new InternalServerErrorException(Message.SERVICE_NOT_FOUND);
 
     const application = await this.applicationService.create(
       input,
@@ -56,7 +62,11 @@ export class ApplicationResolver {
       service.agency.toString(),
     );
 
-    await this.serviceService.incrementField(service._id, 'currentApplicationCount');
+    await this.serviceService.serviceStatsEditor({
+      _id: service._id,
+      targetKey: 'currentApplicationCount',
+      modifier: 1,
+    });
 
     const agency = await this.agencyService.findById(service.agency.toString());
     if (agency?.owner) {
@@ -73,14 +83,14 @@ export class ApplicationResolver {
     return application as any;
   }
 
-  @UseGuards(GqlJwtAuthGuard)
   @Mutation(() => ApplicationType, { name: 'updateApplicationStatus' })
   async updateApplicationStatus(
     @Args('id') id: string,
     @Args('input') input: UpdateApplicationInput,
   ): Promise<ApplicationType> {
+    console.log('Mutation: updateApplicationStatus');
     const existing = await this.applicationService.findById(id);
-    if (!existing) throw new NotFoundException('Application not found');
+    if (!existing) throw new InternalServerErrorException(Message.APPLICATION_NOT_FOUND);
 
     const updated = await this.applicationService.update(id, input);
 

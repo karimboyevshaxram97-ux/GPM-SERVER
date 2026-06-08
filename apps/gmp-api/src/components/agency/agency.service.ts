@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, BadRequestException, InternalServerErrorException } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model, Types } from 'mongoose';
 import { Agency, AgencyDocument } from '../../schemas/Agency.model';
@@ -6,6 +6,7 @@ import { CreateAgencyInput, UpdateAgencyInput } from '../../libs/dto/agency/agen
 import { AgenciesInquiryInput } from '../../libs/dto/agency/agencies-inquiry.input';
 import { AgenciesInquiryResult } from '../../libs/dto/agency/agencies-inquiry.result';
 import { Direction } from '../../libs/enums';
+import { Message, T, StatisticModifier } from '../../libs';
 
 @Injectable()
 export class AgencyService {
@@ -14,7 +15,7 @@ export class AgencyService {
   async getAgencies(input: AgenciesInquiryInput): Promise<AgenciesInquiryResult> {
     const { text, status, verificationStatus, country, sort, direction, page, limit } = input;
 
-    const match: Record<string, any> = {};
+    const match: T = {};
 
     if (text) {
       match.$or = [
@@ -41,6 +42,7 @@ export class AgencyService {
       },
     ]);
 
+    if (!result.length) throw new InternalServerErrorException(Message.NO_DATA_FOUND);
     return result[0];
   }
 
@@ -53,32 +55,45 @@ export class AgencyService {
   }
 
   async create(input: CreateAgencyInput, userId: string): Promise<AgencyDocument> {
-    const slug = input.name
-      .trim()
-      .toLowerCase()
-      .replace(/\s+/g, '-')
-      .replace(/[^a-z0-9-]/g, '');
+    try {
+      const slug = input.name
+        .trim()
+        .toLowerCase()
+        .replace(/\s+/g, '-')
+        .replace(/[^a-z0-9-]/g, '');
 
-    const agency = new this.agencyModel({
-      ...input,
-      slug,
-      owner: new Types.ObjectId(userId),
-      admins: [new Types.ObjectId(userId)],
-    });
-    return agency.save();
+      return await this.agencyModel.create({
+        ...input,
+        slug,
+        owner: new Types.ObjectId(userId),
+        admins: [new Types.ObjectId(userId)],
+      });
+    } catch (err: any) {
+      console.log('Error, AgencyService.create:', err.message);
+      throw new BadRequestException(Message.CREATE_FAILED);
+    }
   }
 
-  async update(id: string, input: UpdateAgencyInput): Promise<AgencyDocument | null> {
-    return this.agencyModel.findByIdAndUpdate(id, input, { new: true }).exec();
+  async update(id: string, input: UpdateAgencyInput): Promise<AgencyDocument> {
+    const result = await this.agencyModel.findByIdAndUpdate(id, input, { new: true }).exec();
+    if (!result) throw new InternalServerErrorException(Message.UPDATE_FAILED);
+    return result;
   }
 
-  async delete(id: string): Promise<AgencyDocument | null> {
-    return this.agencyModel.findByIdAndDelete(id).exec();
+  async delete(id: string): Promise<AgencyDocument> {
+    const result = await this.agencyModel.findByIdAndDelete(id).exec();
+    if (!result) throw new InternalServerErrorException(Message.REMOVE_FAILED);
+    return result;
   }
 
-  async incrementField(id: string | Types.ObjectId, field: string, amount = 1): Promise<void> {
-    await this.agencyModel
-      .findByIdAndUpdate(id, { $inc: { [field]: amount } })
+  async agencyStatsEditor(input: StatisticModifier): Promise<AgencyDocument | null> {
+    const { _id, targetKey, modifier } = input;
+    return this.agencyModel
+      .findByIdAndUpdate(_id, { $inc: { [targetKey]: modifier } }, { new: true })
       .exec();
+  }
+
+  async updateReviewStats(id: string, averageRating: number, totalReviews: number): Promise<void> {
+    await this.agencyModel.findByIdAndUpdate(id, { averageRating, totalReviews }).exec();
   }
 }
