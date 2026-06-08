@@ -3,9 +3,10 @@ import { UseGuards } from '@nestjs/common';
 import { AgencyService } from './agency.service';
 import { ServiceService } from '../service/service.service';
 import { AgencyType } from '../../libs/dto/agency/agency.type';
+import { AgenciesInquiryInput } from '../../libs/dto/agency/agencies-inquiry.input';
+import { AgenciesInquiryResult } from '../../libs/dto/agency/agencies-inquiry.result';
 import { CreateAgencyInput, UpdateAgencyInput } from '../../libs/dto/agency/agency.input';
 import { GqlJwtAuthGuard } from '../auth/guards/gql-jwt-auth.guard';
-import { GqlRolesGuard } from '../auth/guards/gql-roles.guard';
 import { Public } from '../auth/decorators/public.decorator';
 import { Roles } from '../auth/decorators/roles.decorator';
 import { UserRole } from '../../libs/enums/user.enum';
@@ -19,15 +20,23 @@ export class AgencyResolver {
   ) {}
 
   @Public()
-  @Query(() => [AgencyType], { name: 'agencies' })
-  async agencies(): Promise<AgencyType[]> {
-    return this.agencyService.findAll() as any;
+  @Query(() => AgenciesInquiryResult, { name: 'getAgencies' })
+  async getAgencies(
+    @Args('input') input: AgenciesInquiryInput,
+  ): Promise<AgenciesInquiryResult> {
+    return this.agencyService.getAgencies(input);
   }
 
   @Public()
-  @Query(() => AgencyType, { name: 'agency', nullable: true })
-  async agency(@Args('id') id: string): Promise<AgencyType | null> {
+  @Query(() => AgencyType, { name: 'getAgency', nullable: true })
+  async getAgency(@Args('id') id: string): Promise<AgencyType | null> {
     return this.agencyService.findById(id) as any;
+  }
+
+  @Public()
+  @Query(() => AgencyType, { name: 'getAgencyBySlug', nullable: true })
+  async getAgencyBySlug(@Args('slug') slug: string): Promise<AgencyType | null> {
+    return this.agencyService.findBySlug(slug) as any;
   }
 
   @UseGuards(GqlJwtAuthGuard)
@@ -39,7 +48,7 @@ export class AgencyResolver {
     return this.agencyService.create(input, user._id.toString()) as any;
   }
 
-  @UseGuards(GqlJwtAuthGuard, GqlRolesGuard)
+  @UseGuards(GqlJwtAuthGuard)
   @Roles(UserRole.SUPER_ADMIN)
   @Mutation(() => AgencyType, { name: 'updateAgency' })
   async updateAgency(
@@ -49,18 +58,11 @@ export class AgencyResolver {
     return this.agencyService.update(id, input) as any;
   }
 
-  @UseGuards(GqlJwtAuthGuard, GqlRolesGuard)
+  @UseGuards(GqlJwtAuthGuard)
   @Roles(UserRole.SUPER_ADMIN)
   @Mutation(() => Boolean, { name: 'deleteAgency' })
   async deleteAgency(@Args('id') id: string): Promise<boolean> {
     await this.agencyService.delete(id);
     return true;
-  }
-
-  @Public()
-  @Query(() => [String], { name: 'agencyServiceIds' })
-  async agencyServiceIds(@Args('agencyId') agencyId: string): Promise<string[]> {
-    const services = await this.serviceService.findByAgency(agencyId);
-    return services.map((service) => service._id.toString());
   }
 }
