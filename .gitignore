@@ -38,7 +38,6 @@ redis_data/
 
 # uploads
 uploads/*
-!uploads/.gitkeep
 
 # GraphQL schema
 src/schema.gql
