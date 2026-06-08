@@ -1,0 +1,12 @@
+node_modules
+dist
+.git
+.gitignore
+.env
+.env.local
+.env.*.local
+*.md
+coverage
+uploads
+apps/*/node_modules
+apps/*/dist

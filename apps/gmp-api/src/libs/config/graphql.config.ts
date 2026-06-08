@@ -18,6 +18,9 @@ import {
 import { ReviewStatus } from '../enums/review.enum';
 import { UserRole, UserStatus } from '../enums/user.enum';
 import { ConversationStatus } from '../enums/messaging.enum';
+import { Direction, AgencyInquirySort, ServiceInquirySort } from '../enums/inquiry.enum';
+import { NotificationType } from '../enums/notification.enum';
+import { LikeTargetType, ViewTargetType } from '../enums/like-view.enum';
 
 registerEnumType(UserRole, { name: 'UserRole' });
 registerEnumType(UserStatus, { name: 'UserStatus' });
@@ -41,6 +44,15 @@ registerEnumType(ConversationStatus, { name: 'ConversationStatus' });
 registerEnumType(BillingCycle, { name: 'BillingCycle' });
 registerEnumType(PlanStatus, { name: 'PlanStatus' });
 registerEnumType(SupportLevel, { name: 'SupportLevel' });
+
+registerEnumType(Direction, { name: 'Direction' });
+registerEnumType(AgencyInquirySort, { name: 'AgencyInquirySort' });
+registerEnumType(ServiceInquirySort, { name: 'ServiceInquirySort' });
+
+registerEnumType(NotificationType, { name: 'NotificationType' });
+
+registerEnumType(LikeTargetType, { name: 'LikeTargetType' });
+registerEnumType(ViewTargetType, { name: 'ViewTargetType' });
 
 export const graphqlConfig: ApolloDriverConfig = {
   driver: ApolloDriver,

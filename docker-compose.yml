@@ -1,6 +1,7 @@
 version: '3.8'
 
 services:
+  # ─── Infrastructure ──────────────────────────────────────────────────────────
   mongodb:
     image: mongo:7.0
     container_name: gmp-mongodb
@@ -51,9 +52,56 @@ services:
     networks:
       - gmp-network
 
+  # ─── Applications ─────────────────────────────────────────────────────────────
+  gmp-api:
+    build:
+      context: ./apps/gmp-api
+      dockerfile: Dockerfile
+    container_name: gmp-api
+    ports:
+      - '3007:3007'
+    environment:
+      NODE_ENV: production
+      PORT_API: 3007
+      MONGODB_URI: mongodb://admin:password@mongodb:27017/gmp-dev?authSource=admin
+      MONGO_PROD: mongodb://admin:password@mongodb:27017/gmp-dev?authSource=admin
+      SECRET_TOKEN: ${SECRET_TOKEN}
+      JWT_SECRET: ${JWT_SECRET}
+      JWT_EXPIRATION: ${JWT_EXPIRATION:-3600}
+      JWT_REFRESH_SECRET: ${JWT_REFRESH_SECRET}
+      JWT_REFRESH_EXPIRATION: ${JWT_REFRESH_EXPIRATION:-604800}
+      ALLOWED_ORIGINS: ${ALLOWED_ORIGINS:-http://localhost:3000}
+    volumes:
+      - uploads_data:/app/uploads
+    depends_on:
+      mongodb:
+        condition: service_healthy
+    networks:
+      - gmp-network
+    restart: unless-stopped
+
+  gmp-batch:
+    build:
+      context: ./apps/gmp-batch
+      dockerfile: Dockerfile
+    container_name: gmp-batch
+    ports:
+      - '4000:4000'
+    environment:
+      NODE_ENV: production
+      PORT_BATCH: 4000
+      MONGODB_URI: mongodb://admin:password@mongodb:27017/gmp-dev?authSource=admin
+    depends_on:
+      mongodb:
+        condition: service_healthy
+    networks:
+      - gmp-network
+    restart: unless-stopped
+
 volumes:
   mongodb_data:
   redis_data:
+  uploads_data:
 
 networks:
   gmp-network:
