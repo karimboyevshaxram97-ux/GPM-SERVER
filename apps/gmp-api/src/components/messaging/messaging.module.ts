@@ -4,7 +4,7 @@ import { Conversation, ConversationSchema } from '../../schemas/Conversation.mod
 import { Message, MessageSchema } from '../../schemas/Message.model';
 import { MessagingService } from './messaging.service';
 import { MessagingResolver } from './messaging.resolver';
-import { MessagingGateway } from './messaging.gateway';
+import { MessagingGateway } from '../../socket/messaging.gateway';
 import { AuthModule } from '../auth/auth.module';
 
 @Module({

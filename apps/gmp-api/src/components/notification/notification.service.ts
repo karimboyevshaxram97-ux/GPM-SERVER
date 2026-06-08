@@ -2,7 +2,7 @@ import { Injectable } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model, Types } from 'mongoose';
 import { Notification, NotificationDocument } from '../../schemas/Notification.model';
-import { NotificationGateway } from './notification.gateway';
+import { NotificationGateway } from '../../socket/notification.gateway';
 import { NotificationType } from '../../libs/enums';
 import { NotificationsInquiryInput } from '../../libs/dto/notification/notifications-inquiry.input';
 import { NotificationsInquiryResult } from '../../libs/dto/notification/notifications-inquiry.result';

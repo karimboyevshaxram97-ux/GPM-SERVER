@@ -9,8 +9,8 @@ import {
 import { Server } from 'ws';
 import * as WebSocket from 'ws';
 import * as Url from 'url';
-import { AuthService } from '../auth/auth.service';
-import { UserDocument } from '../../schemas/User.model';
+import { AuthService } from '../components/auth/auth.service';
+import { UserDocument } from '../schemas/User.model';
 
 @WebSocketGateway({ path: '/notifications', transports: ['websocket'], secure: false })
 export class NotificationGateway implements OnGatewayInit, OnGatewayConnection, OnGatewayDisconnect {
@@ -37,7 +37,7 @@ export class NotificationGateway implements OnGatewayInit, OnGatewayConnection, 
   }
 
   handleDisconnect(client: WebSocket): void {
-    const authUser = this.clientsAuthMap.get(client);
+    const authUser = this.clientsAuthMap.get(client) ?? null;
     this.summaryClients--;
     this.clientsAuthMap.delete(client);
 

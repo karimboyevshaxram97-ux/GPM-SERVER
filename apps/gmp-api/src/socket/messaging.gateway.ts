@@ -10,8 +10,8 @@ import {
 import { Server } from 'ws';
 import * as WebSocket from 'ws';
 import * as Url from 'url';
-import { AuthService } from '../auth/auth.service';
-import { UserDocument } from '../../schemas/User.model';
+import { AuthService } from '../components/auth/auth.service';
+import { UserDocument } from '../schemas/User.model';
 
 interface MessagePayload {
   event: string;
@@ -128,7 +128,7 @@ export class MessagingGateway implements OnGatewayInit, OnGatewayConnection, OnG
 
 /*
  * MESSAGE TARGETS:
- * 1. sendToClient  — faqat bitta client
+ * 1. sendToClient     — faqat bitta client
  * 2. broadcastMessage — yuboruvchidan boshqa hammaga
- * 3. emitMessage   — barcha clientlarga
+ * 3. emitMessage      — barcha clientlarga
  */
