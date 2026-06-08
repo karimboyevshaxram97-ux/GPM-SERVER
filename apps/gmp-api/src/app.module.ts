@@ -25,6 +25,7 @@ import { MessagingModule } from './components/messaging/messaging.module';
 import { SubscriptionModule } from './components/subscription/subscription.module';
 import { AnalyticsModule } from './components/analytics/analytics.module';
 import { AdminModule } from './components/admin/admin.module';
+import { UploadModule } from './components/upload/upload.module';
 
 @Module({
   imports: [
@@ -88,6 +89,7 @@ import { AdminModule } from './components/admin/admin.module';
     SubscriptionModule,
     AnalyticsModule,
     AdminModule,
+    UploadModule,
   ],
   providers: [
     {
