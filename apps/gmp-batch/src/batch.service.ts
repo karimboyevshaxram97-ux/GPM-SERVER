@@ -18,7 +18,7 @@ export class BatchService {
     return { status: 'GMP Batch alive', timestamp: new Date() };
   }
 
-  // :00 — Barcha rankni 0 ga tushirish
+  // :00 — Reset all ranks to 0
   @Cron('0 * * * * *')
   async batchRollback(): Promise<void> {
     try {
@@ -34,51 +34,59 @@ export class BatchService {
     }
   }
 
-  // :20 — Agency ranking hisoblash
-  // Formula: totalServices×5 + totalReviews×3 + averageRating×10
+  // :20 — Agency ranking
+  // Formula: totalServices×5 + totalReviews×3 + averageRating×10 + likeCount×2 + viewCount×1
   @Cron('20 * * * * *')
   async batchTopAgencies(): Promise<void> {
     try {
-      const agencies = await this.agencyModel.find().exec();
-
-      await Promise.all(
-        agencies.map((agency) => {
-          const rank =
-            agency.totalServices * 5 +
-            agency.totalReviews * 3 +
-            Math.round(agency.averageRating * 10);
-          return this.agencyModel
-            .updateOne({ _id: agency._id }, { agencyRank: rank })
-            .exec();
-        }),
+      const result = await this.agencyModel.updateMany(
+        {},
+        [
+          {
+            $set: {
+              agencyRank: {
+                $add: [
+                  { $multiply: ['$totalServices', 5] },
+                  { $multiply: ['$totalReviews', 3] },
+                  { $multiply: [{ $ifNull: ['$averageRating', 0] }, 10] },
+                  { $multiply: [{ $ifNull: ['$likeCount', 0] }, 2] },
+                  { $ifNull: ['$viewCount', 0] },
+                ],
+              },
+            },
+          },
+        ],
       );
-
-      this.logger.log(`[TopAgencies] ${agencies.length} ta agency rank yangilandi`);
+      this.logger.log(`[TopAgencies] ${result.modifiedCount} agencies ranked`);
     } catch (err) {
       this.logger.error('[TopAgencies] failed', err);
     }
   }
 
-  // :40 — Service ranking hisoblash
-  // Formula: currentApplicationCount×5 + totalReviews×3 + averageRating×10
+  // :40 — Service ranking
+  // Formula: currentApplicationCount×5 + totalReviews×3 + averageRating×10 + likeCount×2 + viewCount×1
   @Cron('40 * * * * *')
   async batchTopServices(): Promise<void> {
     try {
-      const services = await this.serviceModel.find().exec();
-
-      await Promise.all(
-        services.map((service) => {
-          const rank =
-            service.currentApplicationCount * 5 +
-            service.totalReviews * 3 +
-            Math.round(service.averageRating * 10);
-          return this.serviceModel
-            .updateOne({ _id: service._id }, { serviceRank: rank })
-            .exec();
-        }),
+      const result = await this.serviceModel.updateMany(
+        {},
+        [
+          {
+            $set: {
+              serviceRank: {
+                $add: [
+                  { $multiply: [{ $ifNull: ['$currentApplicationCount', 0] }, 5] },
+                  { $multiply: [{ $ifNull: ['$totalReviews', 0] }, 3] },
+                  { $multiply: [{ $ifNull: ['$averageRating', 0] }, 10] },
+                  { $multiply: [{ $ifNull: ['$likeCount', 0] }, 2] },
+                  { $ifNull: ['$viewCount', 0] },
+                ],
+              },
+            },
+          },
+        ],
       );
-
-      this.logger.log(`[TopServices] ${services.length} ta service rank yangilandi`);
+      this.logger.log(`[TopServices] ${result.modifiedCount} services ranked`);
     } catch (err) {
       this.logger.error('[TopServices] failed', err);
     }
