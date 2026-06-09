@@ -7,7 +7,6 @@ import { AgenciesInquiryInput } from '../../libs/dto/agency/agencies-inquiry.inp
 import { AgenciesInquiryResult } from '../../libs/dto/agency/agencies-inquiry.result';
 import { CreateAgencyInput, UpdateAgencyInput } from '../../libs/dto/agency/agency.input';
 import { GqlRolesGuard } from '../auth/guards/gql-roles.guard';
-import { Public } from '../auth/decorators/public.decorator';
 import { WithoutAuth } from '../auth/guards/without.guard';
 import { Roles } from '../auth/decorators/roles.decorator';
 import { UserRole, Message } from '../../libs/enums';
@@ -30,14 +29,17 @@ export class AgencyResolver {
     return this.agencyService.getAgencies(input, user?._id?.toString());
   }
 
-  @Public()
+  @WithoutAuth()
   @Query(() => AgencyType, { name: 'getAgency', nullable: true })
-  async getAgency(@Args('id') id: string): Promise<AgencyType | null> {
+  async getAgency(
+    @Args('id') id: string,
+    @CurrentUser() user: any,
+  ): Promise<AgencyType | null> {
     console.log('Query: getAgency');
-    return this.agencyService.findById(id) as any;
+    return this.agencyService.getAgencyDetail(id, user?._id?.toString()) as any;
   }
 
-  @Public()
+  @WithoutAuth()
   @Query(() => AgencyType, { name: 'getAgencyBySlug', nullable: true })
   async getAgencyBySlug(@Args('slug') slug: string): Promise<AgencyType | null> {
     console.log('Query: getAgencyBySlug');

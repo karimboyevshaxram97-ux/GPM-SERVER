@@ -1,9 +1,10 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { Injectable, InternalServerErrorException } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
 import { User, UserDocument } from '../../schemas/User.model';
 import { Agency, AgencyDocument } from '../../schemas/Agency.model';
 import { AgencyVerificationStatus, AgencyStatus, UserStatus } from '../../libs/enums';
+import { Message } from '../../libs';
 
 @Injectable()
 export class AdminService {
@@ -40,7 +41,7 @@ export class AdminService {
 
   async approveAgency(agencyId: string): Promise<AgencyDocument> {
     const agency = await this.agencyModel.findById(agencyId).exec();
-    if (!agency) throw new NotFoundException('Agency not found');
+    if (!agency) throw new InternalServerErrorException(Message.AGENCY_NOT_FOUND);
 
     agency.verificationStatus = AgencyVerificationStatus.VERIFIED;
     agency.verificationDate = new Date();
@@ -49,7 +50,7 @@ export class AdminService {
 
   async rejectAgency(agencyId: string, reason: string): Promise<AgencyDocument> {
     const agency = await this.agencyModel.findById(agencyId).exec();
-    if (!agency) throw new NotFoundException('Agency not found');
+    if (!agency) throw new InternalServerErrorException(Message.AGENCY_NOT_FOUND);
 
     agency.verificationStatus = AgencyVerificationStatus.REJECTED;
     return agency.save();
@@ -57,7 +58,7 @@ export class AdminService {
 
   async suspendAgency(agencyId: string): Promise<AgencyDocument> {
     const agency = await this.agencyModel.findById(agencyId).exec();
-    if (!agency) throw new NotFoundException('Agency not found');
+    if (!agency) throw new InternalServerErrorException(Message.AGENCY_NOT_FOUND);
 
     agency.status = AgencyStatus.SUSPENDED;
     return agency.save();
@@ -65,7 +66,7 @@ export class AdminService {
 
   async activateAgency(agencyId: string): Promise<AgencyDocument> {
     const agency = await this.agencyModel.findById(agencyId).exec();
-    if (!agency) throw new NotFoundException('Agency not found');
+    if (!agency) throw new InternalServerErrorException(Message.AGENCY_NOT_FOUND);
 
     agency.status = AgencyStatus.ACTIVE;
     return agency.save();
@@ -73,7 +74,7 @@ export class AdminService {
 
   async banUser(userId: string): Promise<UserDocument> {
     const user = await this.userModel.findById(userId).exec();
-    if (!user) throw new NotFoundException('User not found');
+    if (!user) throw new InternalServerErrorException(Message.USER_NOT_FOUND);
 
     user.status = UserStatus.BANNED;
     return user.save();
@@ -81,7 +82,7 @@ export class AdminService {
 
   async unbanUser(userId: string): Promise<UserDocument> {
     const user = await this.userModel.findById(userId).exec();
-    if (!user) throw new NotFoundException('User not found');
+    if (!user) throw new InternalServerErrorException(Message.USER_NOT_FOUND);
 
     user.status = UserStatus.ACTIVE;
     return user.save();

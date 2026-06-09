@@ -17,11 +17,13 @@ export class AdminResolver {
 
   @Query(() => PlatformStatsType, { name: 'platformStats' })
   async platformStats(): Promise<PlatformStatsType> {
+    console.log('Query: platformStats');
     return this.adminService.getPlatformStats();
   }
 
   @Query(() => [AgencyType], { name: 'pendingVerifications' })
   async pendingVerifications(): Promise<AgencyType[]> {
+    console.log('Query: pendingVerifications');
     return this.adminService.getPendingVerifications() as any;
   }
 
@@ -30,6 +32,7 @@ export class AdminResolver {
     @Args('page', { type: () => Int, nullable: true }) page?: number,
     @Args('limit', { type: () => Int, nullable: true }) limit?: number,
   ): Promise<UserType[]> {
+    console.log('Query: adminUsers');
     return this.adminService.getAllUsers(page ?? 1, limit ?? 20) as any;
   }
 
@@ -38,36 +41,43 @@ export class AdminResolver {
     @Args('page', { type: () => Int, nullable: true }) page?: number,
     @Args('limit', { type: () => Int, nullable: true }) limit?: number,
   ): Promise<AgencyType[]> {
+    console.log('Query: adminAgencies');
     return this.adminService.getAllAgencies(page ?? 1, limit ?? 20) as any;
   }
 
   @Mutation(() => AgencyType, { name: 'approveAgency' })
   async approveAgency(@Args('input') input: ApproveAgencyInput): Promise<AgencyType> {
+    console.log('Mutation: approveAgency');
     return this.adminService.approveAgency(input.agencyId) as any;
   }
 
   @Mutation(() => AgencyType, { name: 'rejectAgency' })
   async rejectAgency(@Args('input') input: RejectAgencyInput): Promise<AgencyType> {
+    console.log('Mutation: rejectAgency');
     return this.adminService.rejectAgency(input.agencyId, input.reason) as any;
   }
 
   @Mutation(() => AgencyType, { name: 'suspendAgency' })
   async suspendAgency(@Args('input') input: SuspendAgencyInput): Promise<AgencyType> {
+    console.log('Mutation: suspendAgency');
     return this.adminService.suspendAgency(input.agencyId) as any;
   }
 
   @Mutation(() => AgencyType, { name: 'activateAgency' })
   async activateAgency(@Args('agencyId') agencyId: string): Promise<AgencyType> {
+    console.log('Mutation: activateAgency');
     return this.adminService.activateAgency(agencyId) as any;
   }
 
   @Mutation(() => UserType, { name: 'banUser' })
   async banUser(@Args('input') input: BanUserInput): Promise<UserType> {
+    console.log('Mutation: banUser');
     return this.adminService.banUser(input.userId) as any;
   }
 
   @Mutation(() => UserType, { name: 'unbanUser' })
   async unbanUser(@Args('userId') userId: string): Promise<UserType> {
+    console.log('Mutation: unbanUser');
     return this.adminService.unbanUser(userId) as any;
   }
 }

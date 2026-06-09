@@ -5,13 +5,17 @@ import { Service, ServiceDocument } from '../../schemas/Service.model';
 import { CreateServiceInput, UpdateServiceInput } from '../../libs/dto/service/service.input';
 import { ServicesInquiryInput } from '../../libs/dto/service/services-inquiry.input';
 import { ServicesInquiryResult } from '../../libs/dto/service/services-inquiry.result';
-import { Direction, ServiceStatus, ServiceVisibility, LikeTargetType } from '../../libs/enums';
+import { Direction, ServiceStatus, ServiceVisibility, LikeTargetType, ViewTargetType } from '../../libs/enums';
 import { Message, T, StatisticModifier } from '../../libs';
 import { lookupAuthUserLiked } from '../../libs/config/aggregation';
+import { ViewService } from '../view/view.service';
 
 @Injectable()
 export class ServiceService {
-  constructor(@InjectModel(Service.name) private readonly serviceModel: Model<ServiceDocument>) {}
+  constructor(
+    @InjectModel(Service.name) private readonly serviceModel: Model<ServiceDocument>,
+    private readonly viewService: ViewService,
+  ) {}
 
   async getServices(input: ServicesInquiryInput, userId?: string): Promise<ServicesInquiryResult> {
     const {
@@ -81,6 +85,20 @@ export class ServiceService {
     ]);
 
     if (!result.length) throw new InternalServerErrorException(Message.NO_DATA_FOUND);
+    return result[0];
+  }
+
+  async getServiceDetail(id: string, userId?: string): Promise<ServiceDocument | null> {
+    const userObjId = userId ? new Types.ObjectId(userId) : null;
+
+    const result = await this.serviceModel.aggregate([
+      { $match: { _id: new Types.ObjectId(id) } },
+      lookupAuthUserLiked(userObjId, '$_id', LikeTargetType.SERVICE),
+    ]);
+
+    if (!result.length) throw new InternalServerErrorException(Message.SERVICE_NOT_FOUND);
+
+    await this.viewService.recordView(id, ViewTargetType.SERVICE, userId);
     return result[0];
   }
 

@@ -6,6 +6,7 @@ import { ServiceService } from './service.service';
 import { ServiceResolver } from './service.resolver';
 import { AgencyModule } from '../agency/agency.module';
 import { UserModule } from '../user/user.module';
+import { ViewModule } from '../view/view.module';
 
 @Module({
   imports: [
@@ -13,6 +14,7 @@ import { UserModule } from '../user/user.module';
     MongooseModule.forFeature([{ name: Service.name, schema: ServiceSchema }]),
     UserModule,
     AgencyModule,
+    ViewModule,
   ],
   providers: [ServiceService, ServiceResolver],
   exports: [ServiceService],

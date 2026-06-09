@@ -7,7 +7,6 @@ import { ServicesInquiryInput } from '../../libs/dto/service/services-inquiry.in
 import { ServicesInquiryResult } from '../../libs/dto/service/services-inquiry.result';
 import { CreateServiceInput, UpdateServiceInput } from '../../libs/dto/service/service.input';
 import { GqlRolesGuard } from '../auth/guards/gql-roles.guard';
-import { Public } from '../auth/decorators/public.decorator';
 import { WithoutAuth } from '../auth/guards/without.guard';
 import { Roles } from '../auth/decorators/roles.decorator';
 import { UserRole, Message } from '../../libs/enums';
@@ -30,14 +29,17 @@ export class ServiceResolver {
     return this.serviceService.getServices(input, user?._id?.toString());
   }
 
-  @Public()
+  @WithoutAuth()
   @Query(() => ServiceGraphType, { name: 'getService', nullable: true })
-  async getService(@Args('id') id: string): Promise<ServiceGraphType | null> {
+  async getService(
+    @Args('id') id: string,
+    @CurrentUser() user: any,
+  ): Promise<ServiceGraphType | null> {
     console.log('Query: getService');
-    return this.serviceService.findById(id) as any;
+    return this.serviceService.getServiceDetail(id, user?._id?.toString()) as any;
   }
 
-  @Public()
+  @WithoutAuth()
   @Query(() => [ServiceGraphType], { name: 'getServicesByAgency' })
   async getServicesByAgency(@Args('agencyId') agencyId: string): Promise<ServiceGraphType[]> {
     console.log('Query: getServicesByAgency');

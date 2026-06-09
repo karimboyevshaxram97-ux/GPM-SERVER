@@ -5,13 +5,17 @@ import { Agency, AgencyDocument } from '../../schemas/Agency.model';
 import { CreateAgencyInput, UpdateAgencyInput } from '../../libs/dto/agency/agency.input';
 import { AgenciesInquiryInput } from '../../libs/dto/agency/agencies-inquiry.input';
 import { AgenciesInquiryResult } from '../../libs/dto/agency/agencies-inquiry.result';
-import { Direction, LikeTargetType } from '../../libs/enums';
+import { Direction, LikeTargetType, ViewTargetType } from '../../libs/enums';
 import { Message, T, StatisticModifier } from '../../libs';
 import { lookupAuthUserLiked, lookupAuthUserFollowed } from '../../libs/config/aggregation';
+import { ViewService } from '../view/view.service';
 
 @Injectable()
 export class AgencyService {
-  constructor(@InjectModel(Agency.name) private readonly agencyModel: Model<AgencyDocument>) {}
+  constructor(
+    @InjectModel(Agency.name) private readonly agencyModel: Model<AgencyDocument>,
+    private readonly viewService: ViewService,
+  ) {}
 
   async getAgencies(input: AgenciesInquiryInput, userId?: string): Promise<AgenciesInquiryResult> {
     const { text, status, verificationStatus, country, sort, direction, page, limit } = input;
@@ -50,6 +54,21 @@ export class AgencyService {
     ]);
 
     if (!result.length) throw new InternalServerErrorException(Message.NO_DATA_FOUND);
+    return result[0];
+  }
+
+  async getAgencyDetail(id: string, userId?: string): Promise<AgencyDocument | null> {
+    const userObjId = userId ? new Types.ObjectId(userId) : null;
+
+    const result = await this.agencyModel.aggregate([
+      { $match: { _id: new Types.ObjectId(id) } },
+      lookupAuthUserLiked(userObjId, '$_id', LikeTargetType.AGENCY),
+      lookupAuthUserFollowed(userObjId, '$_id'),
+    ]);
+
+    if (!result.length) throw new InternalServerErrorException(Message.AGENCY_NOT_FOUND);
+
+    await this.viewService.recordView(id, ViewTargetType.AGENCY, userId);
     return result[0];
   }
 
