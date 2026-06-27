@@ -16,12 +16,23 @@ export class AdminUserSeeder {
 
   async seed(): Promise<void> {
     const existing = await this.userModel.findOne({ email: ADMIN_EMAIL }).exec();
+    const passwordHash = await bcrypt.hash(ADMIN_PASSWORD, 12);
+
     if (existing) {
-      this.logger.log(`Admin user already exists (${ADMIN_EMAIL}). Skipping.`);
+      await this.userModel.updateOne(
+        { _id: existing._id },
+        {
+          $set: {
+            password: passwordHash,
+            role: UserRole.SUPER_ADMIN,
+            status: UserStatus.ACTIVE,
+            emailVerified: true,
+          },
+        },
+      );
+      this.logger.log(`Admin user already exists (${ADMIN_EMAIL}). Password and role refreshed.`);
       return;
     }
-
-    const passwordHash = await bcrypt.hash(ADMIN_PASSWORD, 12);
 
     await this.userModel.create({
       firstName: 'Super',

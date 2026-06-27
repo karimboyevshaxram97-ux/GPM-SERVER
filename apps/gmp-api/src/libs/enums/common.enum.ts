@@ -12,6 +12,7 @@ export enum Message {
   TOKEN_NOT_EXIST = 'Bearer token is not provided!',
   ONLY_SPECIFIC_ROLES_ALLOWED = 'Allowed only for members with specific roles!',
   AGENCY_NOT_FOUND = 'Agency not found!',
+  AGENCY_NOT_VERIFIED = 'Agency is not verified yet!',
   SERVICE_NOT_FOUND = 'Service not found!',
   APPLICATION_NOT_FOUND = 'Application not found!',
   USER_NOT_FOUND = 'User not found!',

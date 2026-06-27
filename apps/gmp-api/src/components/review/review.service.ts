@@ -27,6 +27,17 @@ export class ReviewService {
     return this.reviewModel.find({ service: new Types.ObjectId(serviceId) }).exec();
   }
 
+  async existsByUserAndTarget(userId: string, agencyId: string, serviceId?: string): Promise<boolean> {
+    const query: any = {
+      user: new Types.ObjectId(userId),
+      agency: new Types.ObjectId(agencyId),
+    };
+    if (serviceId) query.service = new Types.ObjectId(serviceId);
+    else query.service = { $exists: false };
+
+    return !!(await this.reviewModel.exists(query));
+  }
+
   async create(input: CreateReviewInput, userId: string): Promise<ReviewDocument> {
     try {
       const review = new this.reviewModel({

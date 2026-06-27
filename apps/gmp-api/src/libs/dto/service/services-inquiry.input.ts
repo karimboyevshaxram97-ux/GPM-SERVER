@@ -1,6 +1,6 @@
 import { InputType, Field, Int, Float } from '@nestjs/graphql';
-import { IsEnum, IsInt, IsNumber, IsOptional, IsString, Max, Min } from 'class-validator';
-import { ServiceStatus, ServiceType, ServiceInquirySort, Direction } from '../../enums';
+import { IsBoolean, IsEnum, IsInt, IsNumber, IsOptional, IsString, Max, Min } from 'class-validator';
+import { ServiceStatus, ServiceType, ServiceInquirySort, Direction, ServiceVisibility } from '../../enums';
 
 @InputType()
 export class ServicesInquiryInput {
@@ -33,6 +33,16 @@ export class ServicesInquiryInput {
   @IsOptional()
   @IsEnum(ServiceStatus)
   status?: ServiceStatus;
+
+  @Field(() => ServiceVisibility, { nullable: true })
+  @IsOptional()
+  @IsEnum(ServiceVisibility)
+  visibility?: ServiceVisibility;
+
+  @Field({ nullable: true })
+  @IsOptional()
+  @IsBoolean()
+  includeInactive?: boolean;
 
   @Field(() => Float, { nullable: true })
   @IsOptional()

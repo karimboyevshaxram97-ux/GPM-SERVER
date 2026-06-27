@@ -43,26 +43,74 @@ type AuthResponse {
   user: UserType!
 }
 
+type LikeResult {
+  isLiked: Boolean!
+  likeCount: Int!
+}
+
+type MeLiked {
+  user: String
+  targetId: String
+  myFavorite: Boolean
+}
+
+type MeFollowed {
+  user: String
+  agency: String
+  myFollowing: Boolean
+}
+
+type FollowType {
+  _id: ID!
+  user: String!
+  agency: String!
+  notificationsEnabled: Boolean!
+  followedAt: DateTime!
+  createdAt: DateTime!
+}
+
+type FollowStatusType {
+  isFollowing: Boolean!
+  notificationsEnabled: Boolean!
+}
+
+type LocalizedStringType {
+  uz: String
+  ru: String
+  en: String
+  ko: String
+}
+
 type AgencyType {
   _id: ID!
-  name: String!
+  name: LocalizedStringType!
   slug: String!
-  description: String
+  description: LocalizedStringType
   logo: String
   website: String
   email: String!
   phoneNumber: String
+  address: String
+  city: String
+  country: String
+  latitude: Float
+  longitude: Float
+  coverImage: String
   operatingCountries: [String!]!
   owner: String!
   admins: [String!]!
   status: AgencyStatus!
   verificationStatus: AgencyVerificationStatus!
-  subscriptionStatus: SubscriptionStatus!
-  totalReviews: Float!
-  averageRating: Float!
-  totalServices: Float!
-  createdAt: DateTime!
-  updatedAt: DateTime!
+  subscriptionStatus: SubscriptionStatus
+  totalReviews: Float
+  averageRating: Float
+  totalServices: Float
+  viewCount: Float
+  likeCount: Float
+  meLiked: [MeLiked!]
+  meFollowed: [MeFollowed!]
+  createdAt: DateTime
+  updatedAt: DateTime
 }
 
 enum AgencyStatus {
@@ -84,10 +132,19 @@ enum SubscriptionStatus {
   SUSPENDED
 }
 
+type AgencyInquiryMeta {
+  total: Int!
+}
+
+type AgenciesInquiryResult {
+  list: [AgencyType!]!
+  metaCounter: [AgencyInquiryMeta!]!
+}
+
 type ServiceGraphType {
   _id: ID!
-  name: String!
-  description: String
+  name: LocalizedStringType!
+  description: LocalizedStringType
   keywords: [String!]!
   agency: String!
   serviceType: ServiceType!
@@ -100,8 +157,11 @@ type ServiceGraphType {
   averageRating: Float!
   totalReviews: Float!
   currentApplicationCount: Float!
+  viewCount: Float!
+  likeCount: Float!
   maxApplicationCount: Float
   tags: [String!]!
+  meLiked: [MeLiked!]
   createdAt: DateTime!
   updatedAt: DateTime!
 }
@@ -124,6 +184,15 @@ enum ServiceVisibility {
   PUBLIC
   AGENCY_ONLY
   ARCHIVED
+}
+
+type ServiceInquiryMeta {
+  total: Int!
+}
+
+type ServicesInquiryResult {
+  list: [ServiceGraphType!]!
+  metaCounter: [ServiceInquiryMeta!]!
 }
 
 type ApplicationType {
@@ -157,14 +226,43 @@ enum ApplicationStatus {
 enum PaymentStatus {
   PENDING
   COMPLETED
-  FAILED
   REFUNDED
+  FAILED
 }
 
 enum ApplicationPriority {
   LOW
   MEDIUM
   HIGH
+}
+
+type NotificationGqlType {
+  _id: ID!
+  recipient: String!
+  sender: String
+  type: NotificationType!
+  message: String!
+  targetId: String
+  targetType: String
+  isRead: Boolean!
+  createdAt: DateTime!
+}
+
+enum NotificationType {
+  FOLLOW
+  NEW_SERVICE
+  APPLICATION_RECEIVED
+  APPLICATION_STATUS_CHANGED
+  NEW_REVIEW
+}
+
+type NotificationInquiryMeta {
+  total: Int!
+}
+
+type NotificationsInquiryResult {
+  list: [NotificationGqlType!]!
+  metaCounter: [NotificationInquiryMeta!]!
 }
 
 type ReviewType {
@@ -197,20 +295,6 @@ type CountryType {
   flag: String
   flagUrl: String
   isActive: Boolean!
-}
-
-type FollowType {
-  _id: ID!
-  user: String!
-  agency: String!
-  notificationsEnabled: Boolean!
-  followedAt: DateTime!
-  createdAt: DateTime!
-}
-
-type FollowStatusType {
-  isFollowing: Boolean!
-  notificationsEnabled: Boolean!
 }
 
 type AttachmentType {
@@ -347,22 +431,82 @@ type PlatformStatsType {
   pendingAgencyVerifications: Int!
 }
 
+type AdminUsersResult {
+  list: [UserType!]!
+  total: Int!
+}
+
+type AdminAgenciesResult {
+  list: [AgencyType!]!
+  total: Int!
+}
+
+type MonthlyStatPoint {
+  month: String!
+  users: Int!
+  agencies: Int!
+  applications: Int!
+}
+
+type AuditLogType {
+  _id: ID!
+  adminId: String!
+  action: String!
+  targetType: String!
+  targetId: String!
+  targetName: String
+  reason: String
+  createdAt: DateTime!
+}
+
+type AuditLogsResult {
+  list: [AuditLogType!]!
+  total: Int!
+}
+
+type SupportTicketType {
+  _id: ID!
+  user: String
+  name: String!
+  email: String!
+  phoneNumber: String
+  role: String
+  message: String!
+  status: String!
+  createdAt: DateTime!
+  updatedAt: DateTime!
+}
+
+type SupportTicketsMeta {
+  total: Int!
+}
+
+type SupportTicketsResult {
+  list: [SupportTicketType!]!
+  metaCounter: [SupportTicketsMeta!]!
+}
+
 type Query {
   health: String!
   members: [UserType!]!
   member(id: String!): UserType
   me: UserType!
   adminOnly: String!
-  agencies: [AgencyType!]!
-  agency(id: String!): AgencyType
-  agencyServiceIds(agencyId: String!): [String!]!
-  services: [ServiceGraphType!]!
-  service(id: String!): ServiceGraphType
-  servicesByAgency(agencyId: String!): [ServiceGraphType!]!
+  getAgencies(input: AgenciesInquiryInput!): AgenciesInquiryResult!
+  getAgency(id: String!): AgencyType
+  getAgenciesForMap(filter: AgenciesForMapInput!): [AgencyType!]!
+  getAgencyBySlug(slug: String!): AgencyType
+  myAgency: AgencyType
+  getViewCount(targetId: String!, targetType: ViewTargetType!): Int!
+  getServices(input: ServicesInquiryInput!): ServicesInquiryResult!
+  getService(id: String!): ServiceGraphType
+  getServicesByAgency(agencyId: String!): [ServiceGraphType!]!
   applications: [ApplicationType!]!
-  applicationsByUser: [ApplicationType!]!
+  myApplications: [ApplicationType!]!
   applicationsByAgency(agencyId: String!): [ApplicationType!]!
   applicationsByService(serviceId: String!): [ApplicationType!]!
+  getMyNotifications(input: NotificationsInquiryInput!): NotificationsInquiryResult!
+  getUnreadNotificationCount: Int!
   reviewsByAgency(agencyId: String!): [ReviewType!]!
   reviewsByService(serviceId: String!): [ReviewType!]!
   countries(filter: CountryFilterInput): [CountryType!]!
@@ -381,9 +525,78 @@ type Query {
   agencyStats(agencyId: String!, from: DateTime, to: DateTime): [AgencyStatType!]!
   serviceStats(serviceId: String!, from: DateTime, to: DateTime): [ServiceStatType!]!
   platformStats: PlatformStatsType!
+  monthlyStats(months: Int): [MonthlyStatPoint!]!
   pendingVerifications: [AgencyType!]!
-  adminUsers(page: Int, limit: Int): [UserType!]!
-  adminAgencies(page: Int, limit: Int): [AgencyType!]!
+  adminUsers(page: Int, limit: Int, filter: AdminUsersFilterInput): AdminUsersResult!
+  adminAgencies(page: Int, limit: Int, filter: AdminAgenciesFilterInput): AdminAgenciesResult!
+  auditLogs(page: Int, limit: Int): AuditLogsResult!
+  getLikeStatus(targetId: String!, targetType: LikeTargetType!): LikeResult!
+  adminSupportTickets(input: SupportTicketsInquiryInput!): SupportTicketsResult!
+}
+
+input AgenciesInquiryInput {
+  text: String
+  status: AgencyStatus
+  verificationStatus: AgencyVerificationStatus
+  country: String
+  serviceType: ServiceType
+  sort: AgencyInquirySort! = CREATED_AT
+  direction: Direction! = DESC
+  page: Int! = 1
+  limit: Int! = 10
+}
+
+enum AgencyInquirySort {
+  CREATED_AT
+  AVERAGE_RATING
+  TOTAL_SERVICES
+  AGENCY_RANK
+}
+
+enum Direction {
+  ASC
+  DESC
+}
+
+input AgenciesForMapInput {
+  text: String
+  country: String
+  city: String
+}
+
+enum ViewTargetType {
+  AGENCY
+  SERVICE
+}
+
+input ServicesInquiryInput {
+  text: String
+  serviceType: ServiceType
+  destinationCountry: String
+  sourceCountry: String
+  agencyId: String
+  status: ServiceStatus
+  visibility: ServiceVisibility
+  includeInactive: Boolean
+  minPrice: Float
+  maxPrice: Float
+  sort: ServiceInquirySort! = CREATED_AT
+  direction: Direction! = DESC
+  page: Int! = 1
+  limit: Int! = 10
+}
+
+enum ServiceInquirySort {
+  CREATED_AT
+  AVERAGE_RATING
+  PRICE
+  SERVICE_RANK
+}
+
+input NotificationsInquiryInput {
+  isRead: Boolean
+  page: Int! = 1
+  limit: Int! = 20
 }
 
 input CountryFilterInput {
@@ -392,19 +605,48 @@ input CountryFilterInput {
   search: String
 }
 
+input AdminUsersFilterInput {
+  text: String
+  status: String
+  role: String
+}
+
+input AdminAgenciesFilterInput {
+  text: String
+  status: String
+  verificationStatus: String
+}
+
+enum LikeTargetType {
+  AGENCY
+  SERVICE
+}
+
+input SupportTicketsInquiryInput {
+  status: String
+  text: String
+  page: Int! = 1
+  limit: Int! = 20
+}
+
 type Mutation {
+  updateMe(input: UpdateUserInput!): UserType!
   register(input: RegisterInput!): AuthResponse!
   login(input: LoginInput!): AuthResponse!
   refreshToken(input: RefreshTokenInput!): AuthResponse!
   logout: Boolean!
   createAgency(input: CreateAgencyInput!): AgencyType!
+  updateMyAgency(input: UpdateAgencyInput!): AgencyType!
   updateAgency(id: String!, input: UpdateAgencyInput!): AgencyType!
   deleteAgency(id: String!): Boolean!
+  recordView(targetId: String!, targetType: ViewTargetType!): Int!
   createService(agencyId: String!, input: CreateServiceInput!): ServiceGraphType!
   updateService(id: String!, input: UpdateServiceInput!): ServiceGraphType!
   deleteService(id: String!): Boolean!
   createApplication(input: CreateApplicationInput!): ApplicationType!
-  updateApplication(id: String!, input: UpdateApplicationInput!): ApplicationType!
+  updateApplicationStatus(id: String!, input: UpdateApplicationInput!): ApplicationType!
+  markNotificationAsRead(notificationId: String!): NotificationGqlType
+  markAllNotificationsAsRead: Int!
   createReview(input: CreateReviewInput!): ReviewType!
   createCountry(input: CreateCountryInput!): CountryType!
   toggleCountryActive(id: String!): CountryType
@@ -424,19 +666,35 @@ type Mutation {
   rejectAgency(input: RejectAgencyInput!): AgencyType!
   suspendAgency(input: SuspendAgencyInput!): AgencyType!
   activateAgency(agencyId: String!): AgencyType!
+  adminDeleteAgency(agencyId: String!): AgencyType!
   banUser(input: BanUserInput!): UserType!
   unbanUser(userId: String!): UserType!
+  adminDeleteUser(userId: String!): UserType!
+  toggleLike(targetId: String!, targetType: LikeTargetType!): LikeResult!
+  createSupportTicket(input: CreateSupportTicketInput!): SupportTicketType!
+  updateSupportTicketStatus(input: UpdateSupportTicketStatusInput!): SupportTicketType!
+}
+
+input UpdateUserInput {
+  firstName: String
+  lastName: String
+  bio: String
+  avatar: String
+  phoneNumber: String
+  dateOfBirth: String
+  nationality: String
 }
 
 input RegisterInput {
-  email: String!
+  phoneNumber: String!
   password: String!
   firstName: String!
   lastName: String!
+  role: UserRole
 }
 
 input LoginInput {
-  email: String!
+  phoneNumber: String!
   password: String!
 }
 
@@ -445,37 +703,59 @@ input RefreshTokenInput {
 }
 
 input CreateAgencyInput {
-  name: String!
+  name: LocalizedStringInput!
   email: String!
-  description: String
+  logo: String
+  coverImage: String
+  description: LocalizedStringInput
   operatingCountries: [String!]!
   phoneNumber: String
   website: String
+  address: String
+  city: String
+  country: String
+  latitude: Float
+  longitude: Float
+}
+
+input LocalizedStringInput {
+  uz: String!
+  ru: String
+  en: String
+  ko: String
 }
 
 input UpdateAgencyInput {
-  name: String
-  description: String
+  logo: String
+  coverImage: String
+  name: LocalizedStringInput
+  description: LocalizedStringInput
   operatingCountries: [String!]
   phoneNumber: String
   website: String
+  address: String
+  city: String
+  country: String
+  latitude: Float
+  longitude: Float
 }
 
 input CreateServiceInput {
-  name: String!
-  description: String
+  name: LocalizedStringInput!
+  description: LocalizedStringInput
   serviceType: ServiceType!
   destinationCountry: String!
   sourceCountries: [String!]!
   price: Float
   tags: [String!]
   processingTime: String
+  status: ServiceStatus
   visibility: ServiceVisibility
 }
 
 input UpdateServiceInput {
-  name: String
-  description: String
+  name: LocalizedStringInput
+  description: LocalizedStringInput
   price: Float
   tags: [String!]
   processingTime: String
@@ -489,7 +769,9 @@ input CreateApplicationInput {
 }
 
 input UpdateApplicationInput {
+  status: ApplicationStatus
   notes: String
+  rejectionReason: String
   documents: [String!]
 }
 
@@ -566,10 +848,21 @@ input RejectAgencyInput {
 
 input SuspendAgencyInput {
   agencyId: String!
-  reason: String!
+  reason: String
 }
 
 input BanUserInput {
   userId: String!
-  reason: String!
+  reason: String
+}
+
+input CreateSupportTicketInput {
+  name: String!
+  email: String!
+  message: String!
+}
+
+input UpdateSupportTicketStatusInput {
+  ticketId: String!
+  status: String!
 }

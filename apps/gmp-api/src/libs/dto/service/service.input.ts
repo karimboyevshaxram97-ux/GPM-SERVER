@@ -1,18 +1,21 @@
 import { InputType, Field } from '@nestjs/graphql';
-import { IsString, IsNumber, IsArray, IsOptional, IsEnum, MinLength } from 'class-validator';
-import { ServiceType, ServiceVisibility } from '../../enums';
+import { IsString, IsNumber, IsArray, IsOptional, IsEnum, ValidateNested } from 'class-validator';
+import { Type } from 'class-transformer';
+import { ServiceStatus, ServiceType, ServiceVisibility } from '../../enums';
+import { LocalizedStringInput } from '../common/localized-string.input';
 
 @InputType()
 export class CreateServiceInput {
-  @Field()
-  @IsString()
-  @MinLength(3)
-  name: string;
+  @Field(() => LocalizedStringInput)
+  @ValidateNested()
+  @Type(() => LocalizedStringInput)
+  name: LocalizedStringInput;
 
-  @Field({ nullable: true })
+  @Field(() => LocalizedStringInput, { nullable: true })
   @IsOptional()
-  @IsString()
-  description?: string;
+  @ValidateNested()
+  @Type(() => LocalizedStringInput)
+  description?: LocalizedStringInput;
 
   @Field(() => ServiceType)
   @IsEnum(ServiceType)
@@ -41,6 +44,11 @@ export class CreateServiceInput {
   @IsString()
   processingTime?: string;
 
+  @Field(() => ServiceStatus, { nullable: true })
+  @IsOptional()
+  @IsEnum(ServiceStatus)
+  status?: ServiceStatus;
+
   @Field(() => ServiceVisibility, { nullable: true })
   @IsOptional()
   @IsEnum(ServiceVisibility)
@@ -49,15 +57,17 @@ export class CreateServiceInput {
 
 @InputType()
 export class UpdateServiceInput {
-  @Field({ nullable: true })
+  @Field(() => LocalizedStringInput, { nullable: true })
   @IsOptional()
-  @IsString()
-  name?: string;
+  @ValidateNested()
+  @Type(() => LocalizedStringInput)
+  name?: LocalizedStringInput;
 
-  @Field({ nullable: true })
+  @Field(() => LocalizedStringInput, { nullable: true })
   @IsOptional()
-  @IsString()
-  description?: string;
+  @ValidateNested()
+  @Type(() => LocalizedStringInput)
+  description?: LocalizedStringInput;
 
   @Field({ nullable: true })
   @IsOptional()

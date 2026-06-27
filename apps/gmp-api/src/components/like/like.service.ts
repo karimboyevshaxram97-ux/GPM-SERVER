@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, NotFoundException } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model, Types } from 'mongoose';
 import { Like, LikeDocument } from '../../schemas/Like.model';
@@ -16,6 +16,8 @@ export class LikeService {
   ) {}
 
   async toggleLike(userId: string, targetId: string, targetType: LikeTargetType): Promise<LikeResult> {
+    await this.assertTargetExists(targetId, targetType);
+
     const existing = await this.likeModel
       .findOne({
         user: new Types.ObjectId(userId),
@@ -44,6 +46,8 @@ export class LikeService {
   }
 
   async getLikeStatus(userId: string, targetId: string, targetType: LikeTargetType): Promise<LikeResult> {
+    await this.assertTargetExists(targetId, targetType);
+
     const existing = await this.likeModel
       .findOne({
         user: new Types.ObjectId(userId),
@@ -62,5 +66,11 @@ export class LikeService {
   private async updateLikeCount(targetId: string, targetType: LikeTargetType, delta: number): Promise<void> {
     const model: Model<any> = targetType === LikeTargetType.AGENCY ? this.agencyModel : this.serviceModel;
     await model.findByIdAndUpdate(targetId, { $inc: { likeCount: delta } }).exec();
+  }
+
+  private async assertTargetExists(targetId: string, targetType: LikeTargetType): Promise<void> {
+    const model: Model<any> = targetType === LikeTargetType.AGENCY ? this.agencyModel : this.serviceModel;
+    const exists = await model.exists({ _id: new Types.ObjectId(targetId) });
+    if (!exists) throw new NotFoundException('Like target not found');
   }
 }

@@ -1,13 +1,13 @@
-import { ConflictException, Injectable, UnauthorizedException } from '@nestjs/common';
+import { ConflictException, ForbiddenException, Injectable, UnauthorizedException } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import { ConfigService } from '@nestjs/config';
 import * as bcrypt from 'bcrypt';
-import { CreateUserInput } from '../../libs/dto/user/create-user.input';
+import { RegisterInput } from '../../libs/dto/auth/register.input';
 import { UserService } from '../user/user.service';
 import { AuthResponse } from '../../libs/dto/auth/auth-response.type';
 import { LoginInput } from '../../libs/dto/auth/login.input';
 import { RefreshTokenInput } from '../../libs/dto/auth/refresh-token.input';
-import { Message } from '../../libs';
+import { Message, UserRole, UserStatus } from '../../libs';
 
 @Injectable()
 export class AuthService {
@@ -17,19 +17,21 @@ export class AuthService {
     private readonly configService: ConfigService,
   ) {}
 
-  async register(createUserInput: CreateUserInput): Promise<AuthResponse> {
-    const email = createUserInput.email.toLowerCase();
-    const existingUser = await this.userService.findByEmail(email);
-    if (existingUser) {
-      throw new ConflictException(Message.USED_EMAIL);
-    }
+  async register(input: RegisterInput): Promise<AuthResponse> {
+    const existing = await this.userService.findByPhone(input.phoneNumber);
+    if (existing) throw new ConflictException(Message.ALREADY_EXISTS);
 
-    const hashedPassword = await bcrypt.hash(createUserInput.password, 10);
+    const autoEmail = `${input.phoneNumber.replace(/\D/g, '')}@gmp.app`;
+    const hashedPassword = await bcrypt.hash(input.password, 10);
+    const allowedRole = input.role === UserRole.AGENCY_ADMIN ? UserRole.AGENCY_ADMIN : UserRole.USER;
     const user = await this.userService.create({
-      ...createUserInput,
-      email,
+      firstName: input.firstName,
+      lastName: input.lastName,
+      phoneNumber: input.phoneNumber,
+      email: autoEmail,
       password: hashedPassword,
-    });
+      role: allowedRole,
+    } as any);
 
     const userObject = user.toObject ? user.toObject() : user;
     const refreshToken = this.generateRefreshToken(userObject);
@@ -43,16 +45,14 @@ export class AuthService {
   }
 
   async login(loginInput: LoginInput): Promise<AuthResponse> {
-    const email = loginInput.email.toLowerCase();
-    const user = await this.userService.findByEmail(email, true);
-    if (!user) {
-      throw new UnauthorizedException(Message.NOT_AUTHENTICATED);
-    }
+    let user = await this.userService.findByPhone(loginInput.phoneNumber, true);
+    if (!user) user = await this.userService.findByEmail(loginInput.phoneNumber, true);
+    if (!user) throw new UnauthorizedException(Message.NOT_AUTHENTICATED);
+
+    if (user.status === UserStatus.BANNED) throw new ForbiddenException(Message.NOT_ALLOWED_REQUEST);
 
     const passwordMatches = await bcrypt.compare(loginInput.password, user.password);
-    if (!passwordMatches) {
-      throw new UnauthorizedException(Message.WRONG_PASSWORD);
-    }
+    if (!passwordMatches) throw new UnauthorizedException(Message.WRONG_PASSWORD);
 
     await this.userService.updateLastLoginAt(user._id.toString());
 
@@ -107,9 +107,7 @@ export class AuthService {
 
   async verifyToken(token: string): Promise<any | null> {
     try {
-      const secret =
-        this.configService.get<string>('jwt.secret') ?? 'super-secret-key-change-in-production';
-      const payload = this.jwtService.verify<{ sub: string }>(token, { secret });
+      const payload = this.jwtService.verify<{ sub: string }>(token);
       return this.userService.findById(payload.sub);
     } catch {
       return null;
@@ -117,21 +115,17 @@ export class AuthService {
   }
 
   private generateAccessToken(user: any): string {
-    const secret = this.configService.get<string>('jwt.secret') ?? 'super-secret-key-change-in-production';
-    const expiresIn = this.configService.get<string>('jwt.expiresIn') ?? '3600';
-    const signOptions = {
-      secret,
-      expiresIn,
-    } as any;
-
-    return this.jwtService.sign(
-      {
-        sub: user._id.toString(),
-        email: user.email,
-        role: user.role,
-      },
-      signOptions,
-    );
+    return this.jwtService.sign({
+      sub: user._id.toString(),
+      _id: user._id.toString(),
+      email: user.email ?? '',
+      role: user.role,
+      status: user.status,
+      firstName: user.firstName ?? '',
+      lastName: user.lastName ?? '',
+      avatar: user.avatar ?? '',
+      phoneNumber: user.phoneNumber ?? '',
+    });
   }
 
   private generateRefreshToken(user: any): string {
@@ -141,16 +135,10 @@ export class AuthService {
     const refreshExpiresIn =
       this.configService.get<string>('jwt.refreshExpiresIn') ??
       '604800';
-    const signOptions = {
-      secret: refreshSecret,
-      expiresIn: refreshExpiresIn,
-    } as any;
 
     return this.jwtService.sign(
-      {
-        sub: user._id.toString(),
-      },
-      signOptions,
+      { sub: user._id.toString() },
+      { secret: refreshSecret, expiresIn: refreshExpiresIn } as any,
     );
   }
 }

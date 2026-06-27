@@ -1,11 +1,19 @@
-import { Injectable, BadRequestException, InternalServerErrorException } from '@nestjs/common';
+import { Injectable, BadRequestException, ForbiddenException, InternalServerErrorException } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
-import { Model, Types } from 'mongoose';
+import { Model, PipelineStage, Types } from 'mongoose';
 import { Service, ServiceDocument } from '../../schemas/Service.model';
 import { CreateServiceInput, UpdateServiceInput } from '../../libs/dto/service/service.input';
 import { ServicesInquiryInput } from '../../libs/dto/service/services-inquiry.input';
 import { ServicesInquiryResult } from '../../libs/dto/service/services-inquiry.result';
-import { Direction, ServiceStatus, ServiceVisibility, LikeTargetType, ViewTargetType } from '../../libs/enums';
+import {
+  AgencyStatus,
+  AgencyVerificationStatus,
+  Direction,
+  ServiceStatus,
+  ServiceVisibility,
+  LikeTargetType,
+  ViewTargetType,
+} from '../../libs/enums';
 import { Message, T, StatisticModifier } from '../../libs';
 import { lookupAuthUserLiked } from '../../libs/config/aggregation';
 import { ViewService } from '../view/view.service';
@@ -17,7 +25,7 @@ export class ServiceService {
     private readonly viewService: ViewService,
   ) {}
 
-  async getServices(input: ServicesInquiryInput, userId?: string): Promise<ServicesInquiryResult> {
+  async getServices(input: ServicesInquiryInput, userId?: string, canViewRestricted = false): Promise<ServicesInquiryResult> {
     const {
       text,
       serviceType,
@@ -25,6 +33,8 @@ export class ServiceService {
       sourceCountry,
       agencyId,
       status,
+      visibility,
+      includeInactive,
       minPrice,
       maxPrice,
       sort,
@@ -33,15 +43,26 @@ export class ServiceService {
       limit,
     } = input;
 
-    const match: T = {
-      visibility: ServiceVisibility.PUBLIC,
-      status: status ?? ServiceStatus.ACTIVE,
-    };
+    const match: T = {};
+
+    if (canViewRestricted) {
+      if (visibility) match.visibility = visibility;
+      else if (!includeInactive) match.visibility = ServiceVisibility.PUBLIC;
+
+      if (status) match.status = status;
+      else if (!includeInactive) match.status = ServiceStatus.ACTIVE;
+    } else {
+      match.visibility = ServiceVisibility.PUBLIC;
+      match.status = ServiceStatus.ACTIVE;
+    }
 
     if (text) {
       match.$or = [
-        { name: { $regex: text, $options: 'i' } },
-        { description: { $regex: text, $options: 'i' } },
+        { 'name.uz': { $regex: text, $options: 'i' } },
+        { 'name.ru': { $regex: text, $options: 'i' } },
+        { 'name.en': { $regex: text, $options: 'i' } },
+        { 'name.ko': { $regex: text, $options: 'i' } },
+        { 'description.uz': { $regex: text, $options: 'i' } },
         { keywords: { $elemMatch: { $regex: text, $options: 'i' } } },
       ];
     }
@@ -60,7 +81,7 @@ export class ServiceService {
     const skip = (page - 1) * limit;
     const userObjId = userId ? new Types.ObjectId(userId) : null;
 
-    const result = await this.serviceModel.aggregate<ServicesInquiryResult>([
+    const pipeline: PipelineStage[] = [
       { $match: match },
       {
         $lookup: {
@@ -68,9 +89,21 @@ export class ServiceService {
           localField: 'agency',
           foreignField: '_id',
           as: 'agencyInfo',
-          pipeline: [{ $project: { name: 1, logo: 1, slug: 1, verificationStatus: 1 } }],
+          pipeline: [{ $project: { name: 1, logo: 1, slug: 1, status: 1, verificationStatus: 1 } }],
         },
       },
+    ];
+
+    if (!canViewRestricted) {
+      pipeline.push({
+        $match: {
+          'agencyInfo.status': AgencyStatus.ACTIVE,
+          'agencyInfo.verificationStatus': AgencyVerificationStatus.VERIFIED,
+        },
+      });
+    }
+
+    pipeline.push(
       { $sort: { [sort]: sortDir } },
       {
         $facet: {
@@ -82,13 +115,15 @@ export class ServiceService {
           metaCounter: [{ $count: 'total' }],
         },
       },
-    ]);
+    );
+
+    const result = await this.serviceModel.aggregate<ServicesInquiryResult>(pipeline);
 
     if (!result.length) throw new InternalServerErrorException(Message.NO_DATA_FOUND);
     return result[0];
   }
 
-  async getServiceDetail(id: string, userId?: string): Promise<ServiceDocument | null> {
+  async getServiceDetail(id: string, userId?: string, canViewRestricted = false): Promise<ServiceDocument | null> {
     const userObjId = userId ? new Types.ObjectId(userId) : null;
 
     const result = await this.serviceModel.aggregate([
@@ -97,6 +132,12 @@ export class ServiceService {
     ]);
 
     if (!result.length) throw new InternalServerErrorException(Message.SERVICE_NOT_FOUND);
+    if (
+      !canViewRestricted &&
+      (result[0].status !== ServiceStatus.ACTIVE || result[0].visibility !== ServiceVisibility.PUBLIC)
+    ) {
+      throw new ForbiddenException(Message.NOT_ALLOWED_REQUEST);
+    }
 
     await this.viewService.recordView(id, ViewTargetType.SERVICE, userId);
     return result[0];
@@ -108,6 +149,16 @@ export class ServiceService {
 
   async findByAgency(agencyId: string): Promise<ServiceDocument[]> {
     return this.serviceModel.find({ agency: new Types.ObjectId(agencyId) }).exec();
+  }
+
+  async findPublicByAgency(agencyId: string): Promise<ServiceDocument[]> {
+    return this.serviceModel
+      .find({
+        agency: new Types.ObjectId(agencyId),
+        status: ServiceStatus.ACTIVE,
+        visibility: ServiceVisibility.PUBLIC,
+      })
+      .exec();
   }
 
   async create(input: CreateServiceInput, agencyId: string): Promise<ServiceDocument> {

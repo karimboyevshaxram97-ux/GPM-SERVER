@@ -1,27 +1,19 @@
 import { ApolloDriver, ApolloDriverConfig } from '@nestjs/apollo';
 import { join } from 'path';
 import { registerEnumType } from '@nestjs/graphql';
-import {
-  AgencyStatus,
-  AgencyVerificationStatus,
-  SubscriptionStatus,
-  ServiceStatus,
-  ServiceType,
-  ServiceVisibility,
-  ApplicationStatus,
-  ApplicationPriority,
-  PaymentStatus,
-  BillingCycle,
-  PlanStatus,
-  SupportLevel,
-} from '../enums/domain.enum';
+import { AgencyStatus, AgencyVerificationStatus } from '../enums/agency.enum';
+import { ServiceStatus, ServiceType, ServiceVisibility } from '../enums/service.enum';
+import { ApplicationStatus, ApplicationPriority, PaymentStatus } from '../enums/application.enum';
+import { SubscriptionStatus, BillingCycle, PlanStatus, SupportLevel } from '../enums/subscription.enum';
 import { ReviewStatus } from '../enums/review.enum';
 import { UserRole, UserStatus } from '../enums/user.enum';
 import { ConversationStatus } from '../enums/messaging.enum';
 import { Direction, AgencyInquirySort, ServiceInquirySort } from '../enums/inquiry.enum';
 import { NotificationType } from '../enums/notification.enum';
 import { LikeTargetType, ViewTargetType } from '../enums/like-view.enum';
+import { Lang } from '../enums/lang.enum';
 
+registerEnumType(Lang, { name: 'Lang' });
 registerEnumType(UserRole, { name: 'UserRole' });
 registerEnumType(UserStatus, { name: 'UserStatus' });
 

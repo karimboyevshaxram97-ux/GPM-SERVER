@@ -1,17 +1,18 @@
 import { ObjectType, Field, ID } from '@nestjs/graphql';
 import { ServiceStatus, ServiceType, ServiceVisibility } from '../../enums';
 import { MeLiked } from '../like/like.type';
+import { LocalizedStringType } from '../common/localized-string.type';
 
 @ObjectType()
 export class ServiceGraphType {
   @Field(() => ID)
   _id: string;
 
-  @Field()
-  name: string;
+  @Field(() => LocalizedStringType)
+  name: LocalizedStringType;
 
-  @Field({ nullable: true })
-  description?: string;
+  @Field(() => LocalizedStringType, { nullable: true })
+  description?: LocalizedStringType;
 
   @Field(() => [String])
   keywords: string[];

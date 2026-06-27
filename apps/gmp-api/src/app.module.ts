@@ -25,10 +25,12 @@ import { MessagingModule } from './components/messaging/messaging.module';
 import { SubscriptionModule } from './components/subscription/subscription.module';
 import { AnalyticsModule } from './components/analytics/analytics.module';
 import { AdminModule } from './components/admin/admin.module';
+import { BootstrapModule } from './components/bootstrap/bootstrap.module';
 import { UploadModule } from './components/upload/upload.module';
 import { NotificationModule } from './components/notification/notification.module';
 import { LikeModule } from './components/like/like.module';
 import { ViewModule } from './components/view/view.module';
+import { SupportModule } from './components/support/support.module';
 
 @Module({
   imports: [
@@ -92,10 +94,12 @@ import { ViewModule } from './components/view/view.module';
     SubscriptionModule,
     AnalyticsModule,
     AdminModule,
+    BootstrapModule,
     UploadModule,
     NotificationModule,
     LikeModule,
     ViewModule,
+    SupportModule,
   ],
   providers: [
     {

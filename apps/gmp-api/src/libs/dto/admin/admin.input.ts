@@ -30,9 +30,10 @@ export class BanUserInput {
   @IsString()
   userId: string;
 
-  @Field()
+  @Field({ nullable: true })
+  @IsOptional()
   @IsString()
-  reason: string;
+  reason?: string;
 }
 
 @InputType()
@@ -41,7 +42,38 @@ export class SuspendAgencyInput {
   @IsString()
   agencyId: string;
 
-  @Field()
+  @Field({ nullable: true })
+  @IsOptional()
   @IsString()
-  reason: string;
+  reason?: string;
+}
+
+@InputType()
+export class AdminUsersFilterInput {
+  @Field({ nullable: true })
+  @IsOptional()
+  text?: string;
+
+  @Field({ nullable: true })
+  @IsOptional()
+  status?: string;
+
+  @Field({ nullable: true })
+  @IsOptional()
+  role?: string;
+}
+
+@InputType()
+export class AdminAgenciesFilterInput {
+  @Field({ nullable: true })
+  @IsOptional()
+  text?: string;
+
+  @Field({ nullable: true })
+  @IsOptional()
+  status?: string;
+
+  @Field({ nullable: true })
+  @IsOptional()
+  verificationStatus?: string;
 }

@@ -29,6 +29,14 @@ export class ApplicationService {
     return this.applicationModel.find({ service: new Types.ObjectId(serviceId) }).exec();
   }
 
+  async existsForUserAndService(userId: string, serviceId: string): Promise<boolean> {
+    const existing = await this.applicationModel.exists({
+      user: new Types.ObjectId(userId),
+      service: new Types.ObjectId(serviceId),
+    });
+    return !!existing;
+  }
+
   async create(input: CreateApplicationInput, userId: string, serviceId: string, agencyId: string): Promise<ApplicationDocument> {
     try {
       return await this.applicationModel.create({

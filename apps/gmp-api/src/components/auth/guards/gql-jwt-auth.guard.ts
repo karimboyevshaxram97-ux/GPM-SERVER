@@ -27,8 +27,10 @@ export class GqlJwtAuthGuard implements CanActivate {
       context.getClass(),
     ]);
 
-    const gqlContext = GqlExecutionContext.create(context);
-    const { req } = gqlContext.getContext();
+    const req =
+      context.getType<string>() === 'graphql'
+        ? GqlExecutionContext.create(context).getContext<{ req: any }>().req
+        : context.switchToHttp().getRequest();
     const secret = this.configService.get<string>('jwt.secret') ?? 'super-secret-key-change-in-production';
 
     if (isWithout) {

@@ -1,11 +1,12 @@
 import { InputType, Field } from '@nestjs/graphql';
-import { IsEmail, IsString, MinLength } from 'class-validator';
+import { IsString, MinLength, IsOptional, IsIn } from 'class-validator';
+import { UserRole } from '../../enums/user.enum';
 
 @InputType()
 export class RegisterInput {
   @Field()
-  @IsEmail()
-  email: string;
+  @IsString()
+  phoneNumber: string;
 
   @Field()
   @IsString()
@@ -19,4 +20,9 @@ export class RegisterInput {
   @Field()
   @IsString()
   lastName: string;
+
+  @Field(() => UserRole, { nullable: true })
+  @IsOptional()
+  @IsIn([UserRole.USER, UserRole.AGENCY_ADMIN])
+  role?: UserRole;
 }

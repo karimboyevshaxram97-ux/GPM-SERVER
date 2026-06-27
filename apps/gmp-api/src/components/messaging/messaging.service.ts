@@ -12,7 +12,27 @@ export class MessagingService {
     @InjectModel(Message.name) private messageModel: Model<MessageDocument>,
   ) {}
 
-  async getOrCreateConversation(userId: string, recipientId: string, agencyId?: string): Promise<ConversationDocument> {
+  private getUnreadCountFromMap(unreadCountByUser: any, userId: string): number {
+    const value = typeof unreadCountByUser?.get === 'function'
+      ? unreadCountByUser.get(userId)
+      : unreadCountByUser?.[userId];
+
+    return Number(value ?? 0);
+  }
+
+  private normalizeConversation(conversation: any, userId: string): any {
+    if (!conversation) return conversation;
+
+    const item = conversation?.toObject ? conversation.toObject() : { ...conversation };
+    return {
+      ...item,
+      participants: item.participants ?? [],
+      unreadCount: this.getUnreadCountFromMap(conversation.unreadCountByUser ?? item.unreadCountByUser, userId),
+      status: item.status ?? ConversationStatus.ACTIVE,
+    };
+  }
+
+  async getOrCreateConversation(userId: string, recipientId: string, agencyId?: string): Promise<any> {
     const userObjId = new Types.ObjectId(userId);
     const recipientObjId = new Types.ObjectId(recipientId);
 
@@ -20,21 +40,23 @@ export class MessagingService {
       .findOne({ participants: { $all: [userObjId, recipientObjId] } })
       .exec();
 
-    if (existing) return existing;
+    if (existing) return this.normalizeConversation(existing, userId);
 
     const conversation = new this.conversationModel({
       participants: [userObjId, recipientObjId],
       agency: agencyId ? new Types.ObjectId(agencyId) : undefined,
       unreadCountByUser: {},
     });
-    return conversation.save();
+    const saved = await conversation.save();
+    return this.normalizeConversation(saved, userId);
   }
 
-  async getMyConversations(userId: string): Promise<ConversationDocument[]> {
-    return this.conversationModel
+  async getMyConversations(userId: string): Promise<any[]> {
+    const conversations = await this.conversationModel
       .find({ participants: new Types.ObjectId(userId), status: { $ne: ConversationStatus.BLOCKED } })
       .sort({ lastMessageAt: -1 })
       .exec();
+    return conversations.map((c) => this.normalizeConversation(c, userId));
   }
 
   async getConversationMessages(conversationId: string, userId: string, limit = 50, skip = 0): Promise<MessageDocument[]> {
@@ -105,6 +127,8 @@ export class MessagingService {
   async markConversationAsRead(conversationId: string, userId: string): Promise<boolean> {
     const conversation = await this.conversationModel.findById(conversationId).exec();
     if (!conversation) throw new NotFoundException('Conversation not found');
+    const isParticipant = conversation.participants.some((p) => p.toString() === userId);
+    if (!isParticipant) throw new ForbiddenException('Not a participant of this conversation');
 
     conversation.unreadCountByUser.set(userId, 0);
     conversation.markModified('unreadCountByUser');
@@ -118,7 +142,7 @@ export class MessagingService {
     return true;
   }
 
-  async blockConversation(conversationId: string, userId: string): Promise<ConversationDocument> {
+  async blockConversation(conversationId: string, userId: string): Promise<any> {
     const conversation = await this.conversationModel.findById(conversationId).exec();
     if (!conversation) throw new NotFoundException('Conversation not found');
 
@@ -127,12 +151,15 @@ export class MessagingService {
 
     conversation.status = ConversationStatus.BLOCKED;
     conversation.blockedBy = new Types.ObjectId(userId);
-    return conversation.save();
+    const saved = await conversation.save();
+    return this.normalizeConversation(saved, userId);
   }
 
   async getUnreadCount(conversationId: string, userId: string): Promise<number> {
     const conversation = await this.conversationModel.findById(conversationId).exec();
     if (!conversation) return 0;
+    const isParticipant = conversation.participants.some((p) => p.toString() === userId);
+    if (!isParticipant) throw new ForbiddenException('Not a participant of this conversation');
     return conversation.unreadCountByUser.get(userId) || 0;
   }
 }

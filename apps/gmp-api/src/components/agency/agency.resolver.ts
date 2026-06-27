@@ -1,23 +1,20 @@
 import { Resolver, Query, Mutation, Args } from '@nestjs/graphql';
-import { UseGuards, InternalServerErrorException } from '@nestjs/common';
+import { UseGuards } from '@nestjs/common';
 import { AgencyService } from './agency.service';
-import { ServiceService } from '../service/service.service';
 import { AgencyType } from '../../libs/dto/agency/agency.type';
 import { AgenciesInquiryInput } from '../../libs/dto/agency/agencies-inquiry.input';
 import { AgenciesInquiryResult } from '../../libs/dto/agency/agencies-inquiry.result';
+import { AgenciesForMapInput } from '../../libs/dto/agency/agencies-for-map.input';
 import { CreateAgencyInput, UpdateAgencyInput } from '../../libs/dto/agency/agency.input';
 import { GqlRolesGuard } from '../auth/guards/gql-roles.guard';
 import { WithoutAuth } from '../auth/guards/without.guard';
 import { Roles } from '../auth/decorators/roles.decorator';
-import { UserRole, Message } from '../../libs/enums';
+import { UserRole } from '../../libs/enums';
 import { CurrentUser } from '../auth/decorators/current-user.decorator';
 
 @Resolver(() => AgencyType)
 export class AgencyResolver {
-  constructor(
-    private readonly agencyService: AgencyService,
-    private readonly serviceService: ServiceService,
-  ) {}
+  constructor(private readonly agencyService: AgencyService) {}
 
   @WithoutAuth()
   @Query(() => AgenciesInquiryResult, { name: 'getAgencies' })
@@ -36,7 +33,16 @@ export class AgencyResolver {
     @CurrentUser() user: any,
   ): Promise<AgencyType | null> {
     console.log('Query: getAgency');
-    return this.agencyService.getAgencyDetail(id, user?._id?.toString()) as any;
+    return this.agencyService.getAgencyDetail(id, user) as any;
+  }
+
+  @WithoutAuth()
+  @Query(() => [AgencyType], { name: 'getAgenciesForMap' })
+  async getAgenciesForMap(
+    @Args('filter') filter: AgenciesForMapInput,
+  ): Promise<AgencyType[]> {
+    console.log('Query: getAgenciesForMap');
+    return this.agencyService.getAgenciesForMap(filter) as any;
   }
 
   @WithoutAuth()
@@ -46,6 +52,12 @@ export class AgencyResolver {
     return this.agencyService.findBySlug(slug) as any;
   }
 
+  @Query(() => AgencyType, { name: 'myAgency', nullable: true })
+  async myAgency(@CurrentUser() user: any): Promise<AgencyType | null> {
+    console.log('Query: myAgency');
+    return this.agencyService.findByOwner(user._id.toString()) as any;
+  }
+
   @Mutation(() => AgencyType, { name: 'createAgency' })
   async createAgency(
     @Args('input') input: CreateAgencyInput,
@@ -53,6 +65,15 @@ export class AgencyResolver {
   ): Promise<AgencyType> {
     console.log('Mutation: createAgency');
     return this.agencyService.create(input, user._id.toString()) as any;
+  }
+
+  @Mutation(() => AgencyType, { name: 'updateMyAgency' })
+  async updateMyAgency(
+    @Args('input') input: UpdateAgencyInput,
+    @CurrentUser() user: any,
+  ): Promise<AgencyType> {
+    console.log('Mutation: updateMyAgency');
+    return this.agencyService.updateByOwner(user._id.toString(), input) as any;
   }
 
   @UseGuards(GqlRolesGuard)

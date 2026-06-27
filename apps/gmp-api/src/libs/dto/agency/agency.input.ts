@@ -1,12 +1,14 @@
-import { InputType, Field } from '@nestjs/graphql';
-import { IsString, IsEmail, IsArray, MinLength, IsOptional } from 'class-validator';
+import { InputType, Field, Float } from '@nestjs/graphql';
+import { IsEmail, IsArray, IsOptional, IsNumber, IsString, ValidateNested } from 'class-validator';
+import { Type } from 'class-transformer';
+import { LocalizedStringInput } from '../common/localized-string.input';
 
 @InputType()
 export class CreateAgencyInput {
-  @Field()
-  @IsString()
-  @MinLength(3)
-  name: string;
+  @Field(() => LocalizedStringInput)
+  @ValidateNested()
+  @Type(() => LocalizedStringInput)
+  name: LocalizedStringInput;
 
   @Field()
   @IsEmail()
@@ -15,7 +17,18 @@ export class CreateAgencyInput {
   @Field({ nullable: true })
   @IsOptional()
   @IsString()
-  description?: string;
+  logo?: string;
+
+  @Field({ nullable: true })
+  @IsOptional()
+  @IsString()
+  coverImage?: string;
+
+  @Field(() => LocalizedStringInput, { nullable: true })
+  @IsOptional()
+  @ValidateNested()
+  @Type(() => LocalizedStringInput)
+  description?: LocalizedStringInput;
 
   @Field(() => [String])
   @IsArray()
@@ -23,13 +36,33 @@ export class CreateAgencyInput {
 
   @Field({ nullable: true })
   @IsOptional()
-  @IsString()
   phoneNumber?: string;
 
   @Field({ nullable: true })
   @IsOptional()
-  @IsString()
   website?: string;
+
+  @Field({ nullable: true })
+  @IsOptional()
+  address?: string;
+
+  @Field({ nullable: true })
+  @IsOptional()
+  city?: string;
+
+  @Field({ nullable: true })
+  @IsOptional()
+  country?: string;
+
+  @Field(() => Float, { nullable: true })
+  @IsOptional()
+  @IsNumber()
+  latitude?: number;
+
+  @Field(() => Float, { nullable: true })
+  @IsOptional()
+  @IsNumber()
+  longitude?: number;
 }
 
 @InputType()
@@ -37,12 +70,24 @@ export class UpdateAgencyInput {
   @Field({ nullable: true })
   @IsOptional()
   @IsString()
-  name?: string;
+  logo?: string;
 
   @Field({ nullable: true })
   @IsOptional()
   @IsString()
-  description?: string;
+  coverImage?: string;
+
+  @Field(() => LocalizedStringInput, { nullable: true })
+  @IsOptional()
+  @ValidateNested()
+  @Type(() => LocalizedStringInput)
+  name?: LocalizedStringInput;
+
+  @Field(() => LocalizedStringInput, { nullable: true })
+  @IsOptional()
+  @ValidateNested()
+  @Type(() => LocalizedStringInput)
+  description?: LocalizedStringInput;
 
   @Field(() => [String], { nullable: true })
   @IsOptional()
@@ -51,11 +96,31 @@ export class UpdateAgencyInput {
 
   @Field({ nullable: true })
   @IsOptional()
-  @IsString()
   phoneNumber?: string;
 
   @Field({ nullable: true })
   @IsOptional()
-  @IsString()
   website?: string;
+
+  @Field({ nullable: true })
+  @IsOptional()
+  address?: string;
+
+  @Field({ nullable: true })
+  @IsOptional()
+  city?: string;
+
+  @Field({ nullable: true })
+  @IsOptional()
+  country?: string;
+
+  @Field(() => Float, { nullable: true })
+  @IsOptional()
+  @IsNumber()
+  latitude?: number;
+
+  @Field(() => Float, { nullable: true })
+  @IsOptional()
+  @IsNumber()
+  longitude?: number;
 }

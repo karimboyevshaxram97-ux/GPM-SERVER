@@ -1,6 +1,7 @@
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
 import { HydratedDocument, Types } from 'mongoose';
 import { ServiceStatus, ServiceType, ServiceVisibility } from '../libs/enums';
+import { LocalizedString, LocalizedStringSchema } from '../libs/types/localized-string.schema';
 
 export type ServiceDocument = HydratedDocument<Service>;
 
@@ -9,11 +10,11 @@ export type ServiceDocument = HydratedDocument<Service>;
   versionKey: false,
 })
 export class Service {
-  @Prop({ required: true })
-  name: string;
+  @Prop({ type: LocalizedStringSchema, required: true })
+  name: LocalizedString;
 
-  @Prop()
-  description?: string;
+  @Prop({ type: LocalizedStringSchema })
+  description?: LocalizedString;
 
   @Prop([String])
   keywords: string[];
@@ -79,7 +80,11 @@ export class Service {
 export const ServiceSchema = SchemaFactory.createForClass(Service);
 
 // Indexes
-ServiceSchema.index({ name: 'text', description: 'text', keywords: 'text' });
+ServiceSchema.index({
+  'name.uz': 'text', 'name.ru': 'text', 'name.en': 'text', 'name.ko': 'text',
+  'description.uz': 'text', 'description.ru': 'text', 'description.en': 'text', 'description.ko': 'text',
+  keywords: 'text',
+});
 ServiceSchema.index({
   serviceType: 1,
   destinationCountry: 1,

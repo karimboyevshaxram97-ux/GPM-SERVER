@@ -5,7 +5,16 @@ import * as bcrypt from 'bcrypt';
 import { CreateUserInput } from '../../libs/dto/user/create-user.input';
 import { UpdateUserInput } from '../../libs/dto/user/update-user.input';
 import { User, UserDocument } from '../../schemas/User.model';
-import { Message } from '../../libs';
+import { Message, UserRole } from '../../libs';
+
+interface InternalCreateUserInput {
+  phoneNumber: string;
+  password: string;
+  firstName: string;
+  lastName: string;
+  email: string;
+  role: UserRole;
+}
 
 @Injectable()
 export class UserService {
@@ -13,6 +22,18 @@ export class UserService {
 
   async findByEmail(email: string, withPassword = false): Promise<UserDocument | null> {
     const query = this.userModel.findOne({ email: email.toLowerCase() });
+    if (withPassword) query.select('+password');
+    return query.exec();
+  }
+
+  async findByPhone(phoneNumber: string, withPassword = false): Promise<UserDocument | null> {
+    const query = this.userModel.findOne({ phoneNumber });
+    if (withPassword) query.select('+password');
+    return query.exec();
+  }
+
+  async findByName(name: string, withPassword = false): Promise<UserDocument | null> {
+    const query = this.userModel.findOne({ firstName: name });
     if (withPassword) query.select('+password');
     return query.exec();
   }
@@ -64,5 +85,29 @@ export class UserService {
 
   async updateLastLoginAt(userId: string): Promise<void> {
     await this.userModel.findByIdAndUpdate(userId, { lastLoginAt: new Date() }).exec();
+  }
+
+  async updateRole(userId: string, role: UserRole): Promise<void> {
+    await this.userModel.findByIdAndUpdate(userId, { role }).exec();
+  }
+
+  async updateSuperAdminCredentials(
+    userId: string,
+    input: Partial<InternalCreateUserInput> & { password: string },
+  ): Promise<void> {
+    const update: any = {
+      password: input.password,
+      role: UserRole.SUPER_ADMIN,
+    };
+    if (input.phoneNumber) update.phoneNumber = input.phoneNumber;
+    if (input.email) update.email = input.email.toLowerCase();
+    if (input.firstName) update.firstName = input.firstName;
+    if (input.lastName) update.lastName = input.lastName;
+
+    await this.userModel.findByIdAndUpdate(userId, { $set: update }).exec();
+  }
+
+  async createInternal(data: InternalCreateUserInput): Promise<UserDocument> {
+    return this.userModel.create(data);
   }
 }

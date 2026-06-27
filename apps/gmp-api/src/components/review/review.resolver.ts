@@ -1,5 +1,5 @@
 import { Resolver, Query, Mutation, Args } from '@nestjs/graphql';
-import { NotFoundException } from '@nestjs/common';
+import { BadRequestException, ForbiddenException, NotFoundException } from '@nestjs/common';
 import { ReviewService } from './review.service';
 import { ReviewType } from '../../libs/dto/review/review.type';
 import { CreateReviewInput } from '../../libs/dto/review/review.input';
@@ -7,6 +7,8 @@ import { CurrentUser } from '../auth/decorators/current-user.decorator';
 import { AgencyService } from '../agency/agency.service';
 import { ServiceService } from '../service/service.service';
 import { Public } from '../auth/decorators/public.decorator';
+import { ApplicationService } from '../application/application.service';
+import { ApplicationStatus } from '../../libs/enums';
 
 @Resolver(() => ReviewType)
 export class ReviewResolver {
@@ -14,6 +16,7 @@ export class ReviewResolver {
     private readonly reviewService: ReviewService,
     private readonly agencyService: AgencyService,
     private readonly serviceService: ServiceService,
+    private readonly applicationService: ApplicationService,
   ) {}
 
   @Public()
@@ -42,6 +45,26 @@ export class ReviewResolver {
     if (input.serviceId) {
       const service = await this.serviceService.findById(input.serviceId);
       if (!service) throw new NotFoundException('Service not found');
+      if (service.agency.toString() !== input.agencyId) {
+        throw new BadRequestException('Service does not belong to this agency');
+      }
+    }
+
+    const alreadyReviewed = await this.reviewService.existsByUserAndTarget(
+      user._id.toString(),
+      input.agencyId,
+      input.serviceId,
+    );
+    if (alreadyReviewed) throw new BadRequestException('Review already exists');
+
+    if (input.serviceId) {
+      const applications = await this.applicationService.findByService(input.serviceId);
+      const hasCompletedApplication = applications.some(
+        (application) =>
+          application.user.toString() === user._id.toString() &&
+          application.status === ApplicationStatus.COMPLETED,
+      );
+      if (!hasCompletedApplication) throw new ForbiddenException('Completed application is required to review');
     }
 
     return this.reviewService.create(input, user._id.toString()) as any;

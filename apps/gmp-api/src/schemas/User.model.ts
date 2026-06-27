@@ -32,7 +32,7 @@ export class User {
   @Prop({ select: false })
   refreshTokenHash?: string;
 
-  @Prop()
+  @Prop({ unique: true, sparse: true })
   phoneNumber?: string;
 
   @Prop()

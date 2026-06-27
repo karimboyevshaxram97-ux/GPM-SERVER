@@ -1,5 +1,5 @@
 import { Resolver, Query, Mutation, Args } from '@nestjs/graphql';
-import { UseGuards, InternalServerErrorException } from '@nestjs/common';
+import { BadRequestException, ForbiddenException, UseGuards, InternalServerErrorException } from '@nestjs/common';
 import { ApplicationService } from './application.service';
 import { ServiceService } from '../service/service.service';
 import { AgencyService } from '../agency/agency.service';
@@ -9,7 +9,7 @@ import { CreateApplicationInput, UpdateApplicationInput } from '../../libs/dto/a
 import { GqlRolesGuard } from '../auth/guards/gql-roles.guard';
 import { Roles } from '../auth/decorators/roles.decorator';
 import { CurrentUser } from '../auth/decorators/current-user.decorator';
-import { NotificationType, UserRole, Message } from '../../libs/enums';
+import { AgencyStatus, AgencyVerificationStatus, ApplicationStatus, NotificationType, ServiceStatus, ServiceVisibility, UserRole, Message } from '../../libs/enums';
 
 @Resolver(() => ApplicationType)
 export class ApplicationResolver {
@@ -35,14 +35,24 @@ export class ApplicationResolver {
   }
 
   @Query(() => [ApplicationType], { name: 'applicationsByAgency' })
-  async applicationsByAgency(@Args('agencyId') agencyId: string): Promise<ApplicationType[]> {
+  async applicationsByAgency(
+    @Args('agencyId') agencyId: string,
+    @CurrentUser() user: any,
+  ): Promise<ApplicationType[]> {
     console.log('Query: applicationsByAgency');
+    await this.agencyService.assertAgencyAdmin(agencyId, user);
     return this.applicationService.findByAgency(agencyId) as any;
   }
 
   @Query(() => [ApplicationType], { name: 'applicationsByService' })
-  async applicationsByService(@Args('serviceId') serviceId: string): Promise<ApplicationType[]> {
+  async applicationsByService(
+    @Args('serviceId') serviceId: string,
+    @CurrentUser() user: any,
+  ): Promise<ApplicationType[]> {
     console.log('Query: applicationsByService');
+    const service = await this.serviceService.findById(serviceId);
+    if (!service) throw new InternalServerErrorException(Message.SERVICE_NOT_FOUND);
+    await this.agencyService.assertAgencyAdmin(service.agency.toString(), user);
     return this.applicationService.findByService(serviceId) as any;
   }
 
@@ -54,6 +64,28 @@ export class ApplicationResolver {
     console.log('Mutation: createApplication');
     const service = await this.serviceService.findById(input.serviceId);
     if (!service) throw new InternalServerErrorException(Message.SERVICE_NOT_FOUND);
+    if (service.status !== ServiceStatus.ACTIVE || service.visibility !== ServiceVisibility.PUBLIC) {
+      throw new ForbiddenException(Message.NOT_ALLOWED_REQUEST);
+    }
+
+    const agency = await this.agencyService.findById(service.agency.toString());
+    if (!agency) throw new InternalServerErrorException(Message.AGENCY_NOT_FOUND);
+    if (agency.status !== AgencyStatus.ACTIVE || agency.verificationStatus !== AgencyVerificationStatus.VERIFIED) {
+      throw new ForbiddenException(Message.NOT_ALLOWED_REQUEST);
+    }
+
+    if (
+      service.maxApplicationCount !== undefined &&
+      service.currentApplicationCount >= service.maxApplicationCount
+    ) {
+      throw new BadRequestException(Message.NOT_ALLOWED_REQUEST);
+    }
+
+    const alreadyApplied = await this.applicationService.existsForUserAndService(
+      user._id.toString(),
+      service._id.toString(),
+    );
+    if (alreadyApplied) throw new BadRequestException(Message.ALREADY_EXISTS);
 
     const application = await this.applicationService.create(
       input,
@@ -68,7 +100,6 @@ export class ApplicationResolver {
       modifier: 1,
     });
 
-    const agency = await this.agencyService.findById(service.agency.toString());
     if (agency?.owner) {
       await this.notificationService.notify({
         recipient: agency.owner.toString(),
@@ -87,10 +118,24 @@ export class ApplicationResolver {
   async updateApplicationStatus(
     @Args('id') id: string,
     @Args('input') input: UpdateApplicationInput,
+    @CurrentUser() user: any,
   ): Promise<ApplicationType> {
     console.log('Mutation: updateApplicationStatus');
     const existing = await this.applicationService.findById(id);
     if (!existing) throw new InternalServerErrorException(Message.APPLICATION_NOT_FOUND);
+    const canManage = await this.agencyService
+      .assertAgencyAdmin(existing.agency.toString(), user)
+      .then(() => true)
+      .catch(() => false);
+
+    if (!canManage) {
+      const isOwnerWithdraw =
+        existing.user.toString() === user._id.toString() &&
+        input.status === ApplicationStatus.WITHDRAWN &&
+        Object.keys(input).every((key) => ['status', 'notes', 'documents'].includes(key));
+
+      if (!isOwnerWithdraw) throw new ForbiddenException(Message.NOT_ALLOWED_REQUEST);
+    }
 
     const updated = await this.applicationService.update(id, input);
 

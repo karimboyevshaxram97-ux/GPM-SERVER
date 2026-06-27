@@ -1,5 +1,4 @@
-import { Module } from '@nestjs/common';
-import { JwtModule } from '@nestjs/jwt';
+import { Module, forwardRef } from '@nestjs/common';
 import { MongooseModule } from '@nestjs/mongoose';
 import { Service, ServiceSchema } from '../../schemas/Service.model';
 import { ServiceService } from './service.service';
@@ -10,10 +9,9 @@ import { ViewModule } from '../view/view.module';
 
 @Module({
   imports: [
-    JwtModule,
     MongooseModule.forFeature([{ name: Service.name, schema: ServiceSchema }]),
     UserModule,
-    AgencyModule,
+    forwardRef(() => AgencyModule),
     ViewModule,
   ],
   providers: [ServiceService, ServiceResolver],

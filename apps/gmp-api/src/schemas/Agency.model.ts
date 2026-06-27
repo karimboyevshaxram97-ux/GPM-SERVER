@@ -1,6 +1,7 @@
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
 import { HydratedDocument, Types } from 'mongoose';
 import { AgencyStatus, AgencyVerificationStatus, SubscriptionStatus } from '../libs/enums';
+import { LocalizedString, LocalizedStringSchema } from '../libs/types/localized-string.schema';
 
 export type AgencyDocument = HydratedDocument<Agency>;
 
@@ -9,14 +10,14 @@ export type AgencyDocument = HydratedDocument<Agency>;
   versionKey: false,
 })
 export class Agency {
-  @Prop({ required: true })
-  name: string;
+  @Prop({ type: LocalizedStringSchema, required: true })
+  name: LocalizedString;
 
   @Prop({ unique: true, lowercase: true, sparse: true })
   slug: string;
 
-  @Prop()
-  description?: string;
+  @Prop({ type: LocalizedStringSchema })
+  description?: LocalizedString;
 
   @Prop()
   logo?: string;
@@ -41,6 +42,12 @@ export class Agency {
 
   @Prop()
   country?: string;
+
+  @Prop({ type: Number })
+  latitude?: number;
+
+  @Prop({ type: Number })
+  longitude?: number;
 
   @Prop([String])
   operatingCountries: string[];
@@ -102,3 +109,4 @@ AgencySchema.index({ operatingCountries: 1 });
 AgencySchema.index({ subscriptionStatus: 1, activeSubscription: 1 });
 AgencySchema.index({ status: 1, createdAt: -1 });
 AgencySchema.index({ averageRating: -1, totalReviews: -1 });
+AgencySchema.index({ latitude: 1, longitude: 1 }, { sparse: true });
