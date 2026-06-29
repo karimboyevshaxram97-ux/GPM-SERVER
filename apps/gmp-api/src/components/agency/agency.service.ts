@@ -174,6 +174,17 @@ export class AgencyService {
     return this.normalizeAgency(agency);
   }
 
+  async findPublicBySlug(slug: string): Promise<AgencyDocument | null> {
+    const agency = await this.agencyModel
+      .findOne({
+        slug,
+        status: AgencyStatus.ACTIVE,
+        verificationStatus: AgencyVerificationStatus.VERIFIED,
+      })
+      .exec();
+    return this.normalizeAgency(agency);
+  }
+
   async findByOwner(userId: string): Promise<AgencyDocument | null> {
     const agency = await this.agencyModel.findOne({ owner: new Types.ObjectId(userId) }).exec();
     return this.normalizeAgency(agency);

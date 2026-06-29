@@ -31,7 +31,9 @@ export class MessagingResolver {
     @CurrentUser() user: any,
   ): Promise<MessageType[]> {
     console.log('Query: conversationMessages');
-    return this.messagingService.getConversationMessages(conversationId, user._id.toString(), limit ?? 50, skip ?? 0) as any;
+    const safeLimit = Math.min(Math.max(limit ?? 50, 1), 100);
+    const safeSkip = Math.max(skip ?? 0, 0);
+    return this.messagingService.getConversationMessages(conversationId, user._id.toString(), safeLimit, safeSkip) as any;
   }
 
   @Mutation(() => MessageType, { name: 'sendMessage' })

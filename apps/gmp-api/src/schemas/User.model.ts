@@ -1,6 +1,7 @@
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
 import { HydratedDocument } from 'mongoose';
 import { UserRole, UserStatus } from '../libs/enums/user.enum';
+import { Lang } from '../libs/enums/lang.enum';
 
 export type UserDocument = HydratedDocument<User>;
 
@@ -52,6 +53,9 @@ export class User {
 
   @Prop({ enum: UserRole, default: UserRole.USER })
   role: UserRole;
+
+  @Prop({ enum: Lang, default: Lang.UZ })
+  preferredLanguage: Lang;
 
   @Prop({ default: false })
   emailVerified: boolean;

@@ -5,8 +5,9 @@ import { User, UserDocument } from '../../schemas/User.model';
 import { Agency, AgencyDocument } from '../../schemas/Agency.model';
 import { Application, ApplicationDocument } from '../../schemas/Application.model';
 import { Review, ReviewDocument } from '../../schemas/Review.model';
+import { Service, ServiceDocument } from '../../schemas/Service.model';
 import { AuditLog, AuditLogDocument } from '../../schemas/AuditLog.model';
-import { AgencyVerificationStatus, AgencyStatus, UserStatus } from '../../libs/enums';
+import { AgencyVerificationStatus, AgencyStatus, ReviewStatus, UserStatus } from '../../libs/enums';
 import { AdminUsersFilterInput, AdminAgenciesFilterInput } from '../../libs/dto/admin/admin.input';
 import { AdminUsersResult, AdminAgenciesResult, AuditLogsResult, MonthlyStatPoint } from '../../libs/dto/admin/admin.type';
 import { Message } from '../../libs';
@@ -18,6 +19,7 @@ export class AdminService {
     @InjectModel(Agency.name) private agencyModel: Model<AgencyDocument>,
     @InjectModel(Application.name) private applicationModel: Model<ApplicationDocument>,
     @InjectModel(Review.name) private reviewModel: Model<ReviewDocument>,
+    @InjectModel(Service.name) private serviceModel: Model<ServiceDocument>,
     @InjectModel(AuditLog.name) private auditLogModel: Model<AuditLogDocument>,
   ) {}
 
@@ -176,6 +178,11 @@ export class AdminService {
     return { list: list as any, total };
   }
 
+  async getReviews(status?: ReviewStatus): Promise<ReviewDocument[]> {
+    const match = status ? { status } : {};
+    return this.reviewModel.find(match).sort({ createdAt: -1 }).exec();
+  }
+
   async approveAgency(adminId: string, agencyId: string): Promise<AgencyDocument> {
     const agency = await this.agencyModel.findById(agencyId).exec();
     if (!agency) throw new InternalServerErrorException(Message.AGENCY_NOT_FOUND);
@@ -243,6 +250,62 @@ export class AdminService {
     if (!result) throw new InternalServerErrorException(Message.USER_NOT_FOUND);
     await this.log(adminId, 'DELETE_USER', 'USER', userId, `${result.firstName} ${result.lastName}`);
     return result;
+  }
+
+  async updateReviewStatus(
+    adminId: string,
+    reviewId: string,
+    status: ReviewStatus,
+    reason?: string,
+  ): Promise<ReviewDocument> {
+    const review = await this.reviewModel.findById(reviewId).exec();
+    if (!review) throw new InternalServerErrorException(Message.NO_DATA_FOUND);
+
+    review.status = status;
+    const saved = await review.save();
+
+    await this.recalculateReviewStats(saved.agency.toString(), saved.service?.toString());
+    await this.log(adminId, `REVIEW_${status}`, 'REVIEW', reviewId, undefined, reason);
+
+    return saved;
+  }
+
+  private async recalculateReviewStats(agencyId: string, serviceId?: string): Promise<void> {
+    const [agencyStats] = await this.reviewModel.aggregate([
+      {
+        $match: {
+          agency: new Types.ObjectId(agencyId),
+          status: ReviewStatus.APPROVED,
+        },
+      },
+      { $group: { _id: null, avg: { $avg: '$rating' }, count: { $sum: 1 } } },
+    ]);
+
+    await this.agencyModel
+      .findByIdAndUpdate(agencyId, {
+        averageRating: parseFloat((agencyStats?.avg ?? 0).toFixed(1)),
+        totalReviews: agencyStats?.count ?? 0,
+      })
+      .exec();
+
+    if (!serviceId) return;
+
+    const [serviceStats] = await this.reviewModel.aggregate([
+      {
+        $match: {
+          service: new Types.ObjectId(serviceId),
+          status: ReviewStatus.APPROVED,
+        },
+      },
+      { $group: { _id: null, avg: { $avg: '$rating' }, count: { $sum: 1 } } },
+    ]);
+
+    await this.serviceModel
+      .findByIdAndUpdate(serviceId, {
+        averageRating: parseFloat((serviceStats?.avg ?? 0).toFixed(1)),
+        totalReviews: serviceStats?.count ?? 0,
+      })
+      .exec();
   }
 
   private agencyName(agency: any): string {

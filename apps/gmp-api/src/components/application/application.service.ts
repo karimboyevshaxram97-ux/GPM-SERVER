@@ -48,6 +48,9 @@ export class ApplicationService {
       });
     } catch (err: any) {
       console.log('Error, ApplicationService.create:', err.message);
+      if (err?.code === 11000) {
+        throw new BadRequestException(Message.ALREADY_EXISTS);
+      }
       throw new BadRequestException(Message.CREATE_FAILED);
     }
   }

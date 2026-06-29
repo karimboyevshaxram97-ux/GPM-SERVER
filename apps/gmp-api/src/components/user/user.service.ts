@@ -59,15 +59,22 @@ export class UserService {
   }
 
   async updateMe(userId: string, input: UpdateUserInput): Promise<UserDocument> {
-    const result = await this.userModel
-      .findByIdAndUpdate(
-        userId,
-        { $set: input },
-        { new: true },
-      )
-      .exec();
-    if (!result) throw new InternalServerErrorException(Message.UPDATE_FAILED);
-    return result;
+    try {
+      const result = await this.userModel
+        .findByIdAndUpdate(
+          userId,
+          { $set: input },
+          { new: true, runValidators: true },
+        )
+        .exec();
+      if (!result) throw new InternalServerErrorException(Message.UPDATE_FAILED);
+      return result;
+    } catch (err: any) {
+      if (err?.code === 11000) {
+        throw new BadRequestException(Message.ALREADY_EXISTS);
+      }
+      throw err;
+    }
   }
 
   async updateRefreshTokenHash(userId: string, refreshToken: string): Promise<void> {

@@ -1,5 +1,6 @@
 import { InputType, Field } from '@nestjs/graphql';
-import { IsOptional, IsString, IsDateString } from 'class-validator';
+import { IsOptional, IsString, IsDateString, IsEnum } from 'class-validator';
+import { Lang } from '../../enums';
 
 @InputType()
 export class UpdateUserInput {
@@ -37,4 +38,9 @@ export class UpdateUserInput {
   @IsOptional()
   @IsString()
   nationality?: string;
+
+  @Field(() => Lang, { nullable: true })
+  @IsOptional()
+  @IsEnum(Lang)
+  preferredLanguage?: Lang;
 }

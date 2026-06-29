@@ -45,6 +45,8 @@ import { SupportModule } from './components/support/support.module';
         const logger = new Logger('MongooseModule');
         let uri = configService.get<string>('database.mongodb.uri');
 
+        const isProduction = process.env.NODE_ENV === 'production';
+
         if (uri) {
           try {
             const { MongoClient } = await import('mongodb');
@@ -54,11 +56,17 @@ import { SupportModule } from './components/support/support.module';
             await client.close();
             logger.log('Connected to configured MongoDB URI.');
           } catch (err) {
+            if (isProduction) {
+              throw err;
+            }
             logger.warn('Cannot connect to configured MongoDB URI, falling back to in-memory MongoDB.');
             const mongod = await MongoMemoryServer.create();
             uri = mongod.getUri();
           }
         } else {
+          if (isProduction) {
+            throw new Error('MongoDB URI must be set in production');
+          }
           logger.log('MongoDB URI not set, starting in-memory MongoDB for local development.');
           const mongod = await MongoMemoryServer.create();
           uri = mongod.getUri();

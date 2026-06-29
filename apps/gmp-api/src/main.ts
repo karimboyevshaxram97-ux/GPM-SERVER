@@ -15,8 +15,12 @@ async function bootstrap() {
   app.useStaticAssets(path.join(process.cwd(), 'uploads'), { prefix: '/uploads' });
 
   // Enable CORS
+  const allowedOrigins = process.env.ALLOWED_ORIGINS
+    ? process.env.ALLOWED_ORIGINS.split(',').map((origin) => origin.trim()).filter(Boolean)
+    : ['http://localhost:3000', 'http://localhost:3001'];
+
   app.enableCors({
-    origin: process.env.ALLOWED_ORIGINS?.split(',') || ['http://localhost:3000', 'http://localhost:3001'],
+    origin: allowedOrigins,
     credentials: true,
   });
 
@@ -32,8 +36,8 @@ async function bootstrap() {
   const port = process.env.PORT_API || process.env.PORT || 3007;
   await app.listen(port);
 
-  logger.log(`🚀 Application is running on: http://localhost:${port}`);
-  logger.log(`📊 GraphQL Playground: http://localhost:${port}/graphql`);
+  logger.log(`Application is running on port ${port}`);
+  logger.log(`GraphQL endpoint: /graphql`);
 }
 
 bootstrap();

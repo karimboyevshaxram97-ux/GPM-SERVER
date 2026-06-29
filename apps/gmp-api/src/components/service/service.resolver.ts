@@ -55,6 +55,14 @@ export class ServiceResolver {
   @Query(() => [ServiceGraphType], { name: 'getServicesByAgency' })
   async getServicesByAgency(@Args('agencyId') agencyId: string): Promise<ServiceGraphType[]> {
     console.log('Query: getServicesByAgency');
+    const agency = await this.agencyService.findById(agencyId);
+    if (
+      !agency ||
+      agency.status !== AgencyStatus.ACTIVE ||
+      agency.verificationStatus !== AgencyVerificationStatus.VERIFIED
+    ) {
+      return [];
+    }
     return this.serviceService.findPublicByAgency(agencyId) as any;
   }
 

@@ -5,6 +5,7 @@ import { Reflector } from '@nestjs/core';
 import { GqlExecutionContext } from '@nestjs/graphql';
 import { UserService } from '../../user/user.service';
 import { IS_WITHOUT_KEY } from './without.guard';
+import { UserStatus } from '../../../libs/enums';
 
 @Injectable()
 export class GqlJwtAuthGuard implements CanActivate {
@@ -31,7 +32,8 @@ export class GqlJwtAuthGuard implements CanActivate {
       context.getType<string>() === 'graphql'
         ? GqlExecutionContext.create(context).getContext<{ req: any }>().req
         : context.switchToHttp().getRequest();
-    const secret = this.configService.get<string>('jwt.secret') ?? 'super-secret-key-change-in-production';
+    const secret = this.configService.get<string>('jwt.secret');
+    if (!secret) throw new UnauthorizedException('JWT secret is not configured');
 
     if (isWithout) {
       try {
@@ -39,7 +41,8 @@ export class GqlJwtAuthGuard implements CanActivate {
         if (token) {
           const payload = this.jwtService.verify<{ sub: string }>(token, { secret });
           const user = await this.userService.findById(payload.sub);
-          req.user = user ? (user.toObject ? user.toObject() : user) : null;
+          const userObject = user ? (user.toObject ? user.toObject() : user) : null;
+          req.user = userObject?.status === UserStatus.ACTIVE ? userObject : null;
         }
       } catch {}
       return true;
@@ -58,7 +61,12 @@ export class GqlJwtAuthGuard implements CanActivate {
     const user = await this.userService.findById(payload.sub);
     if (!user) throw new UnauthorizedException('User not found');
 
-    req.user = user.toObject ? user.toObject() : user;
+    const userObject = user.toObject ? user.toObject() : user;
+    if (userObject.status !== UserStatus.ACTIVE) {
+      throw new UnauthorizedException('User is not active');
+    }
+
+    req.user = userObject;
     return true;
   }
 

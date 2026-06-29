@@ -68,9 +68,8 @@ export class AuthService {
   }
 
   async refreshToken(input: RefreshTokenInput): Promise<AuthResponse> {
-    const refreshSecret =
-      this.configService.get<string>('jwt.refreshSecret') ??
-      'super-secret-refresh-key-change-in-production';
+    const refreshSecret = this.configService.get<string>('jwt.refreshSecret');
+    if (!refreshSecret) throw new UnauthorizedException(Message.NOT_AUTHENTICATED);
 
     let payload: any;
     try {
@@ -125,13 +124,13 @@ export class AuthService {
       lastName: user.lastName ?? '',
       avatar: user.avatar ?? '',
       phoneNumber: user.phoneNumber ?? '',
+      preferredLanguage: user.preferredLanguage ?? '',
     });
   }
 
   private generateRefreshToken(user: any): string {
-    const refreshSecret =
-      this.configService.get<string>('jwt.refreshSecret') ??
-      'super-secret-refresh-key-change-in-production';
+    const refreshSecret = this.configService.get<string>('jwt.refreshSecret');
+    if (!refreshSecret) throw new UnauthorizedException(Message.NOT_AUTHENTICATED);
     const refreshExpiresIn =
       this.configService.get<string>('jwt.refreshExpiresIn') ??
       '604800';

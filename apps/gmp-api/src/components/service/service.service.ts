@@ -185,6 +185,33 @@ export class ServiceService {
     return result;
   }
 
+  async reserveApplicationSlot(id: string): Promise<boolean> {
+    const result = await this.serviceModel
+      .findOneAndUpdate(
+        {
+          _id: new Types.ObjectId(id),
+          $or: [
+            { maxApplicationCount: { $exists: false } },
+            { maxApplicationCount: null },
+            { $expr: { $lt: ['$currentApplicationCount', '$maxApplicationCount'] } },
+          ],
+        } as any,
+        { $inc: { currentApplicationCount: 1 } },
+        { new: true },
+      )
+      .exec();
+
+    return !!result;
+  }
+
+  async releaseApplicationSlot(id: string): Promise<void> {
+    await this.serviceModel
+      .findByIdAndUpdate(id, {
+        $inc: { currentApplicationCount: -1 },
+      })
+      .exec();
+  }
+
   async serviceStatsEditor(input: StatisticModifier): Promise<ServiceDocument | null> {
     const { _id, targetKey, modifier } = input;
     return this.serviceModel

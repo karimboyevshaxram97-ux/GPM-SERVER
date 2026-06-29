@@ -1,5 +1,5 @@
 import { ObjectType, Field, ID } from '@nestjs/graphql';
-import { UserRole, UserStatus } from '../../enums/user.enum';
+import { Lang, UserRole, UserStatus } from '../../enums';
 
 @ObjectType()
 export class UserType {
@@ -35,6 +35,9 @@ export class UserType {
 
   @Field(() => UserStatus)
   status: UserStatus;
+
+  @Field(() => Lang)
+  preferredLanguage: Lang;
 
   @Field()
   emailVerified: boolean;

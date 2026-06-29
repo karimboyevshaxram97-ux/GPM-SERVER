@@ -49,7 +49,7 @@ export class AgencyResolver {
   @Query(() => AgencyType, { name: 'getAgencyBySlug', nullable: true })
   async getAgencyBySlug(@Args('slug') slug: string): Promise<AgencyType | null> {
     console.log('Query: getAgencyBySlug');
-    return this.agencyService.findBySlug(slug) as any;
+    return this.agencyService.findPublicBySlug(slug) as any;
   }
 
   @Query(() => AgencyType, { name: 'myAgency', nullable: true })

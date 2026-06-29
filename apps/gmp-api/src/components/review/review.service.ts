@@ -6,6 +6,7 @@ import { AgencyService } from '../agency/agency.service';
 import { ServiceService } from '../service/service.service';
 import { CreateReviewInput } from '../../libs/dto/review/review.input';
 import { Message } from '../../libs';
+import { ReviewStatus } from '../../libs/enums';
 
 @Injectable()
 export class ReviewService {
@@ -20,11 +21,15 @@ export class ReviewService {
   }
 
   async findByAgency(agencyId: string): Promise<ReviewDocument[]> {
-    return this.reviewModel.find({ agency: new Types.ObjectId(agencyId) }).exec();
+    return this.reviewModel
+      .find({ agency: new Types.ObjectId(agencyId), status: ReviewStatus.APPROVED })
+      .exec();
   }
 
   async findByService(serviceId: string): Promise<ReviewDocument[]> {
-    return this.reviewModel.find({ service: new Types.ObjectId(serviceId) }).exec();
+    return this.reviewModel
+      .find({ service: new Types.ObjectId(serviceId), status: ReviewStatus.APPROVED })
+      .exec();
   }
 
   async existsByUserAndTarget(userId: string, agencyId: string, serviceId?: string): Promise<boolean> {
@@ -55,6 +60,9 @@ export class ReviewService {
       return saved;
     } catch (err: any) {
       console.log('Error, ReviewService.create:', err.message);
+      if (err?.code === 11000) {
+        throw new BadRequestException(Message.ALREADY_EXISTS);
+      }
       throw new BadRequestException(Message.CREATE_FAILED);
     }
   }
@@ -65,7 +73,7 @@ export class ReviewService {
 
   private async recalculateAgencyStats(agencyId: string): Promise<void> {
     const [stats] = await this.reviewModel.aggregate([
-      { $match: { agency: new Types.ObjectId(agencyId) } },
+      { $match: { agency: new Types.ObjectId(agencyId), status: ReviewStatus.APPROVED } },
       { $group: { _id: null, avg: { $avg: '$rating' }, count: { $sum: 1 } } },
     ]);
     await this.agencyService.updateReviewStats(
@@ -77,7 +85,7 @@ export class ReviewService {
 
   private async recalculateServiceStats(serviceId: string): Promise<void> {
     const [stats] = await this.reviewModel.aggregate([
-      { $match: { service: new Types.ObjectId(serviceId) } },
+      { $match: { service: new Types.ObjectId(serviceId), status: ReviewStatus.APPROVED } },
       { $group: { _id: null, avg: { $avg: '$rating' }, count: { $sum: 1 } } },
     ]);
     await this.serviceService.updateReviewStats(

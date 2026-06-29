@@ -56,6 +56,7 @@ export const ApplicationSchema = SchemaFactory.createForClass(Application);
 
 // Indexes
 ApplicationSchema.index({ user: 1, createdAt: -1 });
+ApplicationSchema.index({ user: 1, service: 1 }, { unique: true });
 ApplicationSchema.index({ agency: 1, status: 1, createdAt: -1 });
 ApplicationSchema.index({ service: 1, status: 1 });
 ApplicationSchema.index({ paymentStatus: 1, appliedAt: -1 });

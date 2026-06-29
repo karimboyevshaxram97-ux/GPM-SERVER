@@ -17,11 +17,12 @@ import {
   AdminAgenciesFilterInput,
 } from '../../libs/dto/admin/admin.input';
 import { AgencyType } from '../../libs/dto/agency/agency.type';
+import { ReviewType } from '../../libs/dto/review/review.type';
 import { UserType } from '../../libs/dto/user/user.type';
 import { GqlRolesGuard } from '../auth/guards/gql-roles.guard';
 import { Roles } from '../auth/decorators/roles.decorator';
 import { CurrentUser } from '../auth/decorators/current-user.decorator';
-import { UserRole } from '../../libs/enums';
+import { ReviewStatus, UserRole } from '../../libs/enums';
 
 @UseGuards(GqlRolesGuard)
 @Roles(UserRole.SUPER_ADMIN)
@@ -70,6 +71,13 @@ export class AdminResolver {
     @Args('limit', { type: () => Int, nullable: true }) limit?: number,
   ): Promise<AuditLogsResult> {
     return this.adminService.getAuditLogs(page ?? 1, limit ?? 30);
+  }
+
+  @Query(() => [ReviewType], { name: 'adminReviews' })
+  async adminReviews(
+    @Args('status', { type: () => ReviewStatus, nullable: true }) status?: ReviewStatus,
+  ): Promise<ReviewType[]> {
+    return this.adminService.getReviews(status) as any;
   }
 
   @Mutation(() => AgencyType, { name: 'approveAgency' })
@@ -134,5 +142,31 @@ export class AdminResolver {
     @Args('userId') userId: string,
   ): Promise<UserType> {
     return this.adminService.deleteUser(admin._id, userId) as any;
+  }
+
+  @Mutation(() => ReviewType, { name: 'approveReview' })
+  async approveReview(
+    @CurrentUser() admin: any,
+    @Args('reviewId') reviewId: string,
+  ): Promise<ReviewType> {
+    return this.adminService.updateReviewStatus(admin._id, reviewId, ReviewStatus.APPROVED) as any;
+  }
+
+  @Mutation(() => ReviewType, { name: 'rejectReview' })
+  async rejectReview(
+    @CurrentUser() admin: any,
+    @Args('reviewId') reviewId: string,
+    @Args('reason', { nullable: true }) reason?: string,
+  ): Promise<ReviewType> {
+    return this.adminService.updateReviewStatus(admin._id, reviewId, ReviewStatus.REJECTED, reason) as any;
+  }
+
+  @Mutation(() => ReviewType, { name: 'hideReview' })
+  async hideReview(
+    @CurrentUser() admin: any,
+    @Args('reviewId') reviewId: string,
+    @Args('reason', { nullable: true }) reason?: string,
+  ): Promise<ReviewType> {
+    return this.adminService.updateReviewStatus(admin._id, reviewId, ReviewStatus.HIDDEN, reason) as any;
   }
 }

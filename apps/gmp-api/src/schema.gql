@@ -530,6 +530,7 @@ type Query {
   adminUsers(page: Int, limit: Int, filter: AdminUsersFilterInput): AdminUsersResult!
   adminAgencies(page: Int, limit: Int, filter: AdminAgenciesFilterInput): AdminAgenciesResult!
   auditLogs(page: Int, limit: Int): AuditLogsResult!
+  adminReviews(status: ReviewStatus): [ReviewType!]!
   getLikeStatus(targetId: String!, targetType: LikeTargetType!): LikeResult!
   adminSupportTickets(input: SupportTicketsInquiryInput!): SupportTicketsResult!
 }
@@ -670,6 +671,9 @@ type Mutation {
   banUser(input: BanUserInput!): UserType!
   unbanUser(userId: String!): UserType!
   adminDeleteUser(userId: String!): UserType!
+  approveReview(reviewId: String!): ReviewType!
+  rejectReview(reviewId: String!, reason: String): ReviewType!
+  hideReview(reviewId: String!, reason: String): ReviewType!
   toggleLike(targetId: String!, targetType: LikeTargetType!): LikeResult!
   createSupportTicket(input: CreateSupportTicketInput!): SupportTicketType!
   updateSupportTicketStatus(input: UpdateSupportTicketStatusInput!): SupportTicketType!

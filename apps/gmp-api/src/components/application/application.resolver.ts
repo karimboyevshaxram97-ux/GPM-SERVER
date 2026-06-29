@@ -20,6 +20,15 @@ export class ApplicationResolver {
     private readonly notificationService: NotificationService,
   ) {}
 
+  private isCapacityStatus(status: ApplicationStatus): boolean {
+    return [
+      ApplicationStatus.SUBMITTED,
+      ApplicationStatus.UNDER_REVIEW,
+      ApplicationStatus.APPROVED,
+      ApplicationStatus.ACCEPTED,
+    ].includes(status);
+  }
+
   @UseGuards(GqlRolesGuard)
   @Roles(UserRole.SUPER_ADMIN)
   @Query(() => [ApplicationType], { name: 'applications' })
@@ -74,31 +83,27 @@ export class ApplicationResolver {
       throw new ForbiddenException(Message.NOT_ALLOWED_REQUEST);
     }
 
-    if (
-      service.maxApplicationCount !== undefined &&
-      service.currentApplicationCount >= service.maxApplicationCount
-    ) {
-      throw new BadRequestException(Message.NOT_ALLOWED_REQUEST);
-    }
-
     const alreadyApplied = await this.applicationService.existsForUserAndService(
       user._id.toString(),
       service._id.toString(),
     );
     if (alreadyApplied) throw new BadRequestException(Message.ALREADY_EXISTS);
 
-    const application = await this.applicationService.create(
-      input,
-      user._id.toString(),
-      service._id.toString(),
-      service.agency.toString(),
-    );
+    const slotReserved = await this.serviceService.reserveApplicationSlot(service._id.toString());
+    if (!slotReserved) throw new BadRequestException(Message.NOT_ALLOWED_REQUEST);
 
-    await this.serviceService.serviceStatsEditor({
-      _id: service._id,
-      targetKey: 'currentApplicationCount',
-      modifier: 1,
-    });
+    let application;
+    try {
+      application = await this.applicationService.create(
+        input,
+        user._id.toString(),
+        service._id.toString(),
+        service.agency.toString(),
+      );
+    } catch (err) {
+      await this.serviceService.releaseApplicationSlot(service._id.toString());
+      throw err;
+    }
 
     if (agency?.owner) {
       await this.notificationService.notify({
@@ -140,6 +145,16 @@ export class ApplicationResolver {
     const updated = await this.applicationService.update(id, input);
 
     if (input.status && input.status !== existing.status) {
+      const wasCounting = this.isCapacityStatus(existing.status);
+      const isCounting = this.isCapacityStatus(input.status);
+      if (wasCounting !== isCounting) {
+        await this.serviceService.serviceStatsEditor({
+          _id: existing.service,
+          targetKey: 'currentApplicationCount',
+          modifier: isCounting ? 1 : -1,
+        });
+      }
+
       await this.notificationService.notify({
         recipient: existing.user.toString(),
         type: NotificationType.APPLICATION_STATUS_CHANGED,

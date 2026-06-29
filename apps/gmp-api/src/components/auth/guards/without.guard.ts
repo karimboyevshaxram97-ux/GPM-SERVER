@@ -4,6 +4,7 @@ import { ConfigService } from '@nestjs/config';
 import { SetMetadata } from '@nestjs/common';
 import { GqlExecutionContext } from '@nestjs/graphql';
 import { UserService } from '../../user/user.service';
+import { UserStatus } from '../../../libs/enums';
 
 export const IS_WITHOUT_KEY = 'isWithout';
 export const WithoutAuth = () => SetMetadata(IS_WITHOUT_KEY, true);
@@ -23,10 +24,12 @@ export class WithoutGuard implements CanActivate {
     try {
       const token = this.extractToken(req);
       if (token) {
-        const secret = this.configService.get<string>('jwt.secret') ?? 'super-secret-key-change-in-production';
+        const secret = this.configService.get<string>('jwt.secret');
+        if (!secret) return true;
         const payload = this.jwtService.verify<{ sub: string }>(token, { secret });
         const user = await this.userService.findById(payload.sub);
-        req.user = user ? (user.toObject ? user.toObject() : user) : null;
+        const userObject = user ? (user.toObject ? user.toObject() : user) : null;
+        req.user = userObject?.status === UserStatus.ACTIVE ? userObject : null;
       }
     } catch {}
 
