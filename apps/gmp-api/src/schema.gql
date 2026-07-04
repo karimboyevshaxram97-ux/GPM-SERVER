@@ -14,6 +14,7 @@ type UserType {
   nationality: String
   role: UserRole!
   status: UserStatus!
+  preferredLanguage: Lang!
   emailVerified: Boolean!
   lastLoginAt: DateTime
   createdAt: DateTime!
@@ -35,6 +36,13 @@ enum UserStatus {
   ACTIVE
   INACTIVE
   BANNED
+}
+
+enum Lang {
+  UZ
+  RU
+  EN
+  KO
 }
 
 type AuthResponse {
@@ -687,6 +695,7 @@ input UpdateUserInput {
   phoneNumber: String
   dateOfBirth: String
   nationality: String
+  preferredLanguage: Lang
 }
 
 input RegisterInput {
