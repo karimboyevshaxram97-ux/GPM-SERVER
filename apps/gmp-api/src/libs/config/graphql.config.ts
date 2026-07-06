@@ -6,7 +6,7 @@ import { ServiceStatus, ServiceType, ServiceVisibility } from '../enums/service.
 import { ApplicationStatus, ApplicationPriority, PaymentStatus } from '../enums/application.enum';
 import { SubscriptionStatus, BillingCycle, PlanStatus, SupportLevel } from '../enums/subscription.enum';
 import { ReviewStatus } from '../enums/review.enum';
-import { UserRole, UserStatus } from '../enums/user.enum';
+import { AuthProvider, UserRole, UserStatus } from '../enums/user.enum';
 import { ConversationStatus } from '../enums/messaging.enum';
 import { Direction, AgencyInquirySort, ServiceInquirySort } from '../enums/inquiry.enum';
 import { NotificationType } from '../enums/notification.enum';
@@ -16,6 +16,7 @@ import { Lang } from '../enums/lang.enum';
 registerEnumType(Lang, { name: 'Lang' });
 registerEnumType(UserRole, { name: 'UserRole' });
 registerEnumType(UserStatus, { name: 'UserStatus' });
+registerEnumType(AuthProvider, { name: 'AuthProvider' });
 
 registerEnumType(AgencyStatus, { name: 'AgencyStatus' });
 registerEnumType(AgencyVerificationStatus, { name: 'AgencyVerificationStatus' });

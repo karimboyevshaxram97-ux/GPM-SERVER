@@ -1,6 +1,6 @@
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
 import { HydratedDocument } from 'mongoose';
-import { UserRole, UserStatus } from '../libs/enums/user.enum';
+import { AuthProvider, UserRole, UserStatus } from '../libs/enums/user.enum';
 import { Lang } from '../libs/enums/lang.enum';
 
 export type UserDocument = HydratedDocument<User>;
@@ -13,22 +13,30 @@ export class User {
   @Prop({ required: true })
   firstName: string;
 
-  @Prop({ required: true })
-  lastName: string;
+  // Optional: social profiles (e.g. Kakao) may only provide a single display name
+  @Prop()
+  lastName?: string;
 
+  // Optional: Kakao may not return an email if the user did not consent
   @Prop({
-    required: true,
     unique: true,
     lowercase: true,
     sparse: true,
   })
-  email: string;
+  email?: string;
 
+  // Optional: social-login users have no local password
   @Prop({
-    required: true,
     select: false, // Exclude from queries by default
   })
-  password: string;
+  password?: string;
+
+  @Prop({ enum: AuthProvider, default: AuthProvider.EMAIL })
+  authProvider: AuthProvider;
+
+  // Provider-issued unique id (only for social accounts)
+  @Prop()
+  providerId?: string;
 
   @Prop({ select: false })
   refreshTokenHash?: string;
@@ -69,3 +77,7 @@ export const UserSchema = SchemaFactory.createForClass(User);
 // email already indexed via unique: true in @Prop
 UserSchema.index({ status: 1, createdAt: -1 });
 UserSchema.index({ nationality: 1 });
+UserSchema.index(
+  { authProvider: 1, providerId: 1 },
+  { unique: true, partialFilterExpression: { providerId: { $exists: true } } },
+);

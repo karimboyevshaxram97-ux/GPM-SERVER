@@ -10,6 +10,7 @@ import { GqlRolesGuard } from './components/auth/guards/gql-roles.guard';
 
 import databaseConfig from './libs/config/database.config';
 import jwtConfig from './libs/config/jwt.config';
+import oauthConfig from './libs/config/oauth.config';
 import { graphqlConfig } from './libs/config/graphql.config';
 
 import { HealthModule } from './components/health/health.module';
@@ -37,7 +38,7 @@ import { SupportModule } from './components/support/support.module';
     ConfigModule.forRoot({
       isGlobal: true,
       envFilePath: '.env.local',
-      load: [databaseConfig, jwtConfig],
+      load: [databaseConfig, jwtConfig, oauthConfig],
     }),
 
     MongooseModule.forRootAsync({

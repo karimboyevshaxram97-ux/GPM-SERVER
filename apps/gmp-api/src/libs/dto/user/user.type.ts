@@ -1,5 +1,5 @@
 import { ObjectType, Field, ID } from '@nestjs/graphql';
-import { Lang, UserRole, UserStatus } from '../../enums';
+import { AuthProvider, Lang, UserRole, UserStatus } from '../../enums';
 
 @ObjectType()
 export class UserType {
@@ -9,11 +9,14 @@ export class UserType {
   @Field()
   firstName: string;
 
-  @Field()
-  lastName: string;
+  @Field({ nullable: true })
+  lastName?: string;
 
-  @Field()
-  email: string;
+  @Field({ nullable: true })
+  email?: string;
+
+  @Field(() => AuthProvider)
+  authProvider: AuthProvider;
 
   @Field({ nullable: true })
   phoneNumber?: string;

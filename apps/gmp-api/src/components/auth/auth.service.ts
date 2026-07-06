@@ -7,7 +7,7 @@ import { UserService } from '../user/user.service';
 import { AuthResponse } from '../../libs/dto/auth/auth-response.type';
 import { LoginInput } from '../../libs/dto/auth/login.input';
 import { RefreshTokenInput } from '../../libs/dto/auth/refresh-token.input';
-import { Message, UserRole, UserStatus } from '../../libs';
+import { AuthProvider, Message, SocialProfile, UserRole, UserStatus } from '../../libs';
 
 @Injectable()
 export class AuthService {
@@ -51,8 +51,44 @@ export class AuthService {
 
     if (user.status === UserStatus.BANNED) throw new ForbiddenException(Message.NOT_ALLOWED_REQUEST);
 
+    if (!user.password) throw new UnauthorizedException(Message.LOGIN_WITH_SOCIAL);
+
     const passwordMatches = await bcrypt.compare(loginInput.password, user.password);
     if (!passwordMatches) throw new UnauthorizedException(Message.WRONG_PASSWORD);
+
+    await this.userService.updateLastLoginAt(user._id.toString());
+
+    const userObject = user.toObject ? user.toObject() : user;
+    const refreshToken = this.generateRefreshToken(userObject);
+    await this.userService.updateRefreshTokenHash(user._id.toString(), refreshToken);
+
+    return {
+      accessToken: this.generateAccessToken(userObject),
+      refreshToken,
+      user: userObject as any,
+    };
+  }
+
+  async socialLogin(profile: SocialProfile): Promise<AuthResponse> {
+    let user = await this.userService.findByProvider(profile.provider, profile.providerId);
+
+    if (!user && profile.email) {
+      const byEmail = await this.userService.findByEmail(profile.email);
+      if (byEmail) {
+        // Linking is only safe onto a password account; an account already owned
+        // by another social provider must keep its original login method.
+        if (byEmail.authProvider !== AuthProvider.EMAIL) {
+          throw new ConflictException(Message.EMAIL_USED_OTHER_PROVIDER);
+        }
+        user = await this.userService.linkSocialAccount(byEmail._id.toString(), profile);
+      }
+    }
+
+    if (!user) {
+      user = await this.userService.createSocialUser(profile);
+    }
+
+    if (user.status === UserStatus.BANNED) throw new ForbiddenException(Message.NOT_ALLOWED_REQUEST);
 
     await this.userService.updateLastLoginAt(user._id.toString());
 

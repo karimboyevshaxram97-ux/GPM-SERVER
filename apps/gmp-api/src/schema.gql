@@ -5,8 +5,9 @@
 type UserType {
   _id: ID!
   firstName: String!
-  lastName: String!
-  email: String!
+  lastName: String
+  email: String
+  authProvider: AuthProvider!
   phoneNumber: String
   avatar: String
   bio: String
@@ -19,6 +20,13 @@ type UserType {
   lastLoginAt: DateTime
   createdAt: DateTime!
   updatedAt: DateTime!
+}
+
+enum AuthProvider {
+  EMAIL
+  GOOGLE
+  KAKAO
+  NAVER
 }
 
 """

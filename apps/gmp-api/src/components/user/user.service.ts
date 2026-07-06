@@ -5,7 +5,7 @@ import * as bcrypt from 'bcrypt';
 import { CreateUserInput } from '../../libs/dto/user/create-user.input';
 import { UpdateUserInput } from '../../libs/dto/user/update-user.input';
 import { User, UserDocument } from '../../schemas/User.model';
-import { Message, UserRole } from '../../libs';
+import { AuthProvider, Message, SocialProfile, UserRole } from '../../libs';
 
 interface InternalCreateUserInput {
   phoneNumber: string;
@@ -116,5 +116,39 @@ export class UserService {
 
   async createInternal(data: InternalCreateUserInput): Promise<UserDocument> {
     return this.userModel.create(data);
+  }
+
+  async findByProvider(provider: AuthProvider, providerId: string): Promise<UserDocument | null> {
+    return this.userModel.findOne({ authProvider: provider, providerId }).exec();
+  }
+
+  async createSocialUser(profile: SocialProfile): Promise<UserDocument> {
+    try {
+      return await this.userModel.create({
+        firstName: profile.firstName || profile.name || 'User',
+        lastName: profile.lastName,
+        email: profile.email ? profile.email.toLowerCase() : undefined,
+        avatar: profile.avatarUrl,
+        authProvider: profile.provider,
+        providerId: profile.providerId,
+        // Providers only return emails they have verified; without one it stays unverified
+        emailVerified: Boolean(profile.email),
+      });
+    } catch (err: any) {
+      console.log('Error, UserService.createSocialUser:', err.message);
+      throw new BadRequestException(Message.CREATE_FAILED);
+    }
+  }
+
+  async linkSocialAccount(userId: string, profile: SocialProfile): Promise<UserDocument> {
+    const user = await this.userModel.findById(userId).exec();
+    if (!user) throw new BadRequestException(Message.USER_NOT_FOUND);
+
+    user.authProvider = profile.provider;
+    user.providerId = profile.providerId;
+    if (!user.avatar && profile.avatarUrl) user.avatar = profile.avatarUrl;
+    // The provider confirmed ownership of this email during OAuth consent
+    if (profile.email && user.email === profile.email.toLowerCase()) user.emailVerified = true;
+    return user.save();
   }
 }
