@@ -140,6 +140,22 @@ export class UserService {
     }
   }
 
+  // Fill in profile fields the provider withheld on an earlier login (e.g. the
+  // consent item was enabled in the provider console after the account was made)
+  async refreshSocialProfile(user: UserDocument, profile: SocialProfile): Promise<UserDocument> {
+    let changed = false;
+    if (!user.avatar && profile.avatarUrl) {
+      user.avatar = profile.avatarUrl;
+      changed = true;
+    }
+    if (!user.email && profile.email) {
+      user.email = profile.email.toLowerCase();
+      user.emailVerified = true;
+      changed = true;
+    }
+    return changed ? user.save() : user;
+  }
+
   async linkSocialAccount(userId: string, profile: SocialProfile): Promise<UserDocument> {
     const user = await this.userModel.findById(userId).exec();
     if (!user) throw new BadRequestException(Message.USER_NOT_FOUND);

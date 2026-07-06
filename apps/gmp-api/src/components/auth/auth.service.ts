@@ -72,6 +72,11 @@ export class AuthService {
   async socialLogin(profile: SocialProfile): Promise<AuthResponse> {
     let user = await this.userService.findByProvider(profile.provider, profile.providerId);
 
+    if (user) {
+      // Consent items may have been granted after the account was created
+      user = await this.userService.refreshSocialProfile(user, profile);
+    }
+
     if (!user && profile.email) {
       const byEmail = await this.userService.findByEmail(profile.email);
       if (byEmail) {
