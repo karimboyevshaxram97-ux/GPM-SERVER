@@ -9,3 +9,10 @@ export enum UserStatus {
   INACTIVE = 'INACTIVE',
   BANNED = 'BANNED',
 }
+
+export enum AuthProvider {
+  EMAIL = 'EMAIL',
+  GOOGLE = 'GOOGLE',
+  KAKAO = 'KAKAO',
+  NAVER = 'NAVER',
+}

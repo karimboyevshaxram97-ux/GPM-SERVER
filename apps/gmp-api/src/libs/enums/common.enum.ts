@@ -18,4 +18,8 @@ export enum Message {
   USER_NOT_FOUND = 'User not found!',
   WRONG_PASSWORD = 'Wrong password, try again!',
   USED_EMAIL = 'This email is already registered!',
+  LOGIN_WITH_SOCIAL = 'This account was created with social login, please sign in with your social provider!',
+  SOCIAL_LOGIN_FAILED = 'Social login failed, please try again!',
+  PROVIDER_NOT_CONFIGURED = 'This social login provider is not configured!',
+  EMAIL_USED_OTHER_PROVIDER = 'This email is already registered with a different login provider!',
 }
