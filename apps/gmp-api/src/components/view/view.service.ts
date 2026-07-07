@@ -4,6 +4,7 @@ import { Model, Types } from 'mongoose';
 import { View, ViewDocument } from '../../schemas/View.model';
 import { Agency, AgencyDocument } from '../../schemas/Agency.model';
 import { Service, ServiceDocument } from '../../schemas/Service.model';
+import { Photo, PhotoDocument } from '../../schemas/Photo.model';
 import { ViewTargetType } from '../../libs/enums';
 
 @Injectable()
@@ -12,6 +13,7 @@ export class ViewService {
     @InjectModel(View.name) private readonly viewModel: Model<ViewDocument>,
     @InjectModel(Agency.name) private readonly agencyModel: Model<AgencyDocument>,
     @InjectModel(Service.name) private readonly serviceModel: Model<ServiceDocument>,
+    @InjectModel(Photo.name) private readonly photoModel: Model<PhotoDocument>,
   ) {}
 
   async recordView(targetId: string, targetType: ViewTargetType, viewerId?: string): Promise<number> {
@@ -55,7 +57,9 @@ export class ViewService {
   }
 
   private async updateViewCount(targetId: string, targetType: ViewTargetType): Promise<void> {
-    const model: Model<any> = targetType === ViewTargetType.AGENCY ? this.agencyModel : this.serviceModel;
+    let model: Model<any> = this.serviceModel;
+    if (targetType === ViewTargetType.AGENCY) model = this.agencyModel;
+    if (targetType === ViewTargetType.PHOTO) model = this.photoModel;
     await model.findByIdAndUpdate(targetId, { $inc: { viewCount: 1 } }).exec();
   }
 }

@@ -502,6 +502,39 @@ type SupportTicketsResult {
   metaCounter: [SupportTicketsMeta!]!
 }
 
+type PhotoType {
+  _id: ID!
+  agency: String!
+  image: String!
+  serviceType: ServiceType!
+  likeCount: Int!
+  viewCount: Int!
+  commentCount: Int!
+  meLiked: [MeLiked!]
+  agencyName: LocalizedStringType
+  agencyLogo: String
+  createdAt: DateTime
+}
+
+type PhotoInquiryMeta {
+  total: Int!
+}
+
+type PhotosInquiryResult {
+  list: [PhotoType!]!
+  metaCounter: [PhotoInquiryMeta!]!
+}
+
+type PhotoCommentType {
+  _id: ID!
+  photo: String!
+  user: String!
+  text: String!
+  userName: String
+  userAvatar: String
+  createdAt: DateTime
+}
+
 type Query {
   health: String!
   members: [UserType!]!
@@ -549,6 +582,8 @@ type Query {
   adminReviews(status: ReviewStatus): [ReviewType!]!
   getLikeStatus(targetId: String!, targetType: LikeTargetType!): LikeResult!
   adminSupportTickets(input: SupportTicketsInquiryInput!): SupportTicketsResult!
+  getPhotos(input: PhotosInquiryInput!): PhotosInquiryResult!
+  getPhotoComments(photoId: String!): [PhotoCommentType!]!
 }
 
 input AgenciesInquiryInput {
@@ -584,6 +619,7 @@ input AgenciesForMapInput {
 enum ViewTargetType {
   AGENCY
   SERVICE
+  PHOTO
 }
 
 input ServicesInquiryInput {
@@ -637,6 +673,7 @@ input AdminAgenciesFilterInput {
 enum LikeTargetType {
   AGENCY
   SERVICE
+  PHOTO
 }
 
 input SupportTicketsInquiryInput {
@@ -644,6 +681,13 @@ input SupportTicketsInquiryInput {
   text: String
   page: Int! = 1
   limit: Int! = 20
+}
+
+input PhotosInquiryInput {
+  serviceType: ServiceType
+  agencyId: String
+  page: Int! = 1
+  limit: Int! = 3
 }
 
 type Mutation {
@@ -693,6 +737,9 @@ type Mutation {
   toggleLike(targetId: String!, targetType: LikeTargetType!): LikeResult!
   createSupportTicket(input: CreateSupportTicketInput!): SupportTicketType!
   updateSupportTicketStatus(input: UpdateSupportTicketStatusInput!): SupportTicketType!
+  createPhoto(input: CreatePhotoInput!): PhotoType!
+  deletePhoto(photoId: String!): Boolean!
+  createPhotoComment(input: CreatePhotoCommentInput!): PhotoCommentType!
 }
 
 input UpdateUserInput {
@@ -886,4 +933,14 @@ input CreateSupportTicketInput {
 input UpdateSupportTicketStatusInput {
   ticketId: String!
   status: String!
+}
+
+input CreatePhotoInput {
+  image: String!
+  serviceType: ServiceType!
+}
+
+input CreatePhotoCommentInput {
+  photoId: String!
+  text: String!
 }

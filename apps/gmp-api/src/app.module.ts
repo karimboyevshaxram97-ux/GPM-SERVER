@@ -32,6 +32,7 @@ import { NotificationModule } from './components/notification/notification.modul
 import { LikeModule } from './components/like/like.module';
 import { ViewModule } from './components/view/view.module';
 import { SupportModule } from './components/support/support.module';
+import { PhotoModule } from './components/photo/photo.module';
 
 @Module({
   imports: [
@@ -109,6 +110,7 @@ import { SupportModule } from './components/support/support.module';
     LikeModule,
     ViewModule,
     SupportModule,
+    PhotoModule,
   ],
   providers: [
     {

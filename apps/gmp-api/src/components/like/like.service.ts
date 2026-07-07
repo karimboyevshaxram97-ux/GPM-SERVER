@@ -4,6 +4,7 @@ import { Model, Types } from 'mongoose';
 import { Like, LikeDocument } from '../../schemas/Like.model';
 import { Agency, AgencyDocument } from '../../schemas/Agency.model';
 import { Service, ServiceDocument } from '../../schemas/Service.model';
+import { Photo, PhotoDocument } from '../../schemas/Photo.model';
 import { LikeResult } from '../../libs/dto/like/like.type';
 import { LikeTargetType } from '../../libs/enums';
 
@@ -13,6 +14,7 @@ export class LikeService {
     @InjectModel(Like.name) private readonly likeModel: Model<LikeDocument>,
     @InjectModel(Agency.name) private readonly agencyModel: Model<AgencyDocument>,
     @InjectModel(Service.name) private readonly serviceModel: Model<ServiceDocument>,
+    @InjectModel(Photo.name) private readonly photoModel: Model<PhotoDocument>,
   ) {}
 
   async toggleLike(userId: string, targetId: string, targetType: LikeTargetType): Promise<LikeResult> {
@@ -63,14 +65,18 @@ export class LikeService {
     return { isLiked: !!existing, likeCount };
   }
 
+  private targetModel(targetType: LikeTargetType): Model<any> {
+    if (targetType === LikeTargetType.AGENCY) return this.agencyModel;
+    if (targetType === LikeTargetType.PHOTO) return this.photoModel;
+    return this.serviceModel;
+  }
+
   private async updateLikeCount(targetId: string, targetType: LikeTargetType, delta: number): Promise<void> {
-    const model: Model<any> = targetType === LikeTargetType.AGENCY ? this.agencyModel : this.serviceModel;
-    await model.findByIdAndUpdate(targetId, { $inc: { likeCount: delta } }).exec();
+    await this.targetModel(targetType).findByIdAndUpdate(targetId, { $inc: { likeCount: delta } }).exec();
   }
 
   private async assertTargetExists(targetId: string, targetType: LikeTargetType): Promise<void> {
-    const model: Model<any> = targetType === LikeTargetType.AGENCY ? this.agencyModel : this.serviceModel;
-    const exists = await model.exists({ _id: new Types.ObjectId(targetId) });
+    const exists = await this.targetModel(targetType).exists({ _id: new Types.ObjectId(targetId) });
     if (!exists) throw new NotFoundException('Like target not found');
   }
 }

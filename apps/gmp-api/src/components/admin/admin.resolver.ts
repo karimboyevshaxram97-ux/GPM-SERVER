@@ -104,6 +104,7 @@ export class AdminResolver {
     return this.adminService.suspendAgency(admin._id, input.agencyId) as any;
   }
 
+  
   @Mutation(() => AgencyType, { name: 'activateAgency' })
   async activateAgency(
     @CurrentUser() admin: any,
@@ -111,6 +112,7 @@ export class AdminResolver {
   ): Promise<AgencyType> {
     return this.adminService.activateAgency(admin._id, agencyId) as any;
   }
+
 
   @Mutation(() => AgencyType, { name: 'adminDeleteAgency' })
   async adminDeleteAgency(
@@ -120,6 +122,7 @@ export class AdminResolver {
     return this.adminService.deleteAgency(admin._id, agencyId) as any;
   }
 
+
   @Mutation(() => UserType, { name: 'banUser' })
   async banUser(
     @CurrentUser() admin: any,
@@ -127,6 +130,7 @@ export class AdminResolver {
   ): Promise<UserType> {
     return this.adminService.banUser(admin._id, input.userId) as any;
   }
+
 
   @Mutation(() => UserType, { name: 'unbanUser' })
   async unbanUser(
@@ -136,6 +140,7 @@ export class AdminResolver {
     return this.adminService.unbanUser(admin._id, userId) as any;
   }
 
+
   @Mutation(() => UserType, { name: 'adminDeleteUser' })
   async adminDeleteUser(
     @CurrentUser() admin: any,
@@ -143,7 +148,9 @@ export class AdminResolver {
   ): Promise<UserType> {
     return this.adminService.deleteUser(admin._id, userId) as any;
   }
+ 
 
+  //====================
   @Mutation(() => ReviewType, { name: 'approveReview' })
   async approveReview(
     @CurrentUser() admin: any,
@@ -152,6 +159,8 @@ export class AdminResolver {
     return this.adminService.updateReviewStatus(admin._id, reviewId, ReviewStatus.APPROVED) as any;
   }
 
+
+  //  ===================================================-
   @Mutation(() => ReviewType, { name: 'rejectReview' })
   async rejectReview(
     @CurrentUser() admin: any,
@@ -160,6 +169,7 @@ export class AdminResolver {
   ): Promise<ReviewType> {
     return this.adminService.updateReviewStatus(admin._id, reviewId, ReviewStatus.REJECTED, reason) as any;
   }
+
 
   @Mutation(() => ReviewType, { name: 'hideReview' })
   async hideReview(

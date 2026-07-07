@@ -22,34 +22,37 @@ export interface UploadResult {
 
 @Injectable()
 export class UploadService {
-  async uploadImage(file: Express.Multer.File, type: ImageType): Promise<UploadResult> {
-    this.ensureUploadsDir();
+  // subDir berilsa fayl uploads/<subDir>/ ichiga saqlanadi (masalan photos/study-abroad)
+  async uploadImage(file: Express.Multer.File, type: ImageType, subDir?: string): Promise<UploadResult> {
+    const targetDir = subDir ? path.join(UPLOADS_DIR, subDir) : UPLOADS_DIR;
+    fs.mkdirSync(targetDir, { recursive: true });
 
     const { width, height } = IMAGE_SIZES[type];
     const filename = `${type}_${uuid()}.webp`;
-    const filepath = path.join(UPLOADS_DIR, filename);
+    const filepath = path.join(targetDir, filename);
 
     await sharp(file.buffer)
       .resize(width, height, { fit: 'cover', position: 'centre' })
       .webp({ quality: 85 })
       .toFile(filepath);
 
+    // DB va URL uchun nisbiy yo'l (photos/study-abroad/image_x.webp)
+    const relative = subDir ? `${subDir.replace(/\\/g, '/')}/${filename}` : filename;
+
     return {
-      url: `/uploads/${filename}`,
-      filename,
+      url: `/uploads/${relative}`,
+      filename: relative,
     };
   }
 
   deleteImage(filename: string): void {
-    const filepath = path.join(UPLOADS_DIR, filename);
+    const filepath = path.resolve(UPLOADS_DIR, filename);
+    // uploads papkasidan tashqariga chiqishni bloklaymiz
+    if (!filepath.startsWith(UPLOADS_DIR)) {
+      throw new BadRequestException('Invalid file path');
+    }
     if (fs.existsSync(filepath)) {
       fs.unlinkSync(filepath);
-    }
-  }
-
-  private ensureUploadsDir(): void {
-    if (!fs.existsSync(UPLOADS_DIR)) {
-      fs.mkdirSync(UPLOADS_DIR, { recursive: true });
     }
   }
 }
