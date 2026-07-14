@@ -56,6 +56,18 @@ export class PhotosInquiryResult {
 }
 
 @ObjectType()
+export class PhotoCommentAttachmentType {
+  @Field()
+  url: string;
+
+  @Field()
+  type: string;
+
+  @Field()
+  name: string;
+}
+
+@ObjectType()
 export class PhotoCommentType {
   @Field(() => ID)
   _id: string;
@@ -66,8 +78,13 @@ export class PhotoCommentType {
   @Field()
   user: string;
 
-  @Field()
-  text: string;
+  // Attachment-only izoh matnsiz bo'lishi mumkin — GraphQL SDL darajasida ham
+  // nullable, aks holda birinchi matnisiz izoh serializatsiyada xato beradi.
+  @Field({ nullable: true })
+  text?: string;
+
+  @Field(() => [PhotoCommentAttachmentType], { nullable: true })
+  attachments?: PhotoCommentAttachmentType[];
 
   @Field({ nullable: true })
   userName?: string;

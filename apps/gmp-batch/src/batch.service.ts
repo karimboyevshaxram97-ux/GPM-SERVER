@@ -4,6 +4,7 @@ import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
 import { Agency, AgencyDocument } from './schemas/Agency.model';
 import { Service, ServiceDocument } from './schemas/Service.model';
+import { AgencySubscription, AgencySubscriptionDocument } from './schemas/AgencySubscription.model';
 
 @Injectable()
 export class BatchService {
@@ -12,26 +13,11 @@ export class BatchService {
   constructor(
     @InjectModel(Agency.name) private agencyModel: Model<AgencyDocument>,
     @InjectModel(Service.name) private serviceModel: Model<ServiceDocument>,
+    @InjectModel(AgencySubscription.name) private agencySubscriptionModel: Model<AgencySubscriptionDocument>,
   ) {}
 
   getStatus() {
     return { status: 'GMP Batch alive', timestamp: new Date() };
-  }
-
-  // :00 — Reset all ranks to 0
-  @Cron('0 * * * * *')
-  async batchRollback(): Promise<void> {
-    try {
-      const [agencies, services] = await Promise.all([
-        this.agencyModel.updateMany({}, { agencyRank: 0 }),
-        this.serviceModel.updateMany({}, { serviceRank: 0 }),
-      ]);
-      this.logger.log(
-        `[Rollback] agencies: ${agencies.modifiedCount}, services: ${services.modifiedCount}`,
-      );
-    } catch (err) {
-      this.logger.error('[Rollback] failed', err);
-    }
   }
 
   // :20 — Agency ranking
@@ -89,6 +75,39 @@ export class BatchService {
       this.logger.log(`[TopServices] ${result.modifiedCount} services ranked`);
     } catch (err) {
       this.logger.error('[TopServices] failed', err);
+    }
+  }
+
+  // Har kuni 00:00 — muddati o'tgan (endDate < now) faol obunalarni EXPIRED qilib,
+  // Agency.subscriptionStatus'ni ham sinxronlaydi (gmp-api SubscriptionService bilan
+  // bir xil 'agencysubscriptions'/'agencies' kolleksiyalariga yozadi).
+  @Cron('0 0 * * *')
+  async batchExpireSubscriptions(): Promise<void> {
+    try {
+      const now = new Date();
+      const overdue = await this.agencySubscriptionModel
+        .find({ status: 'ACTIVE', endDate: { $lt: now } })
+        .select('_id agency')
+        .exec();
+
+      if (!overdue.length) {
+        this.logger.log('[ExpireSubscriptions] nothing to expire');
+        return;
+      }
+
+      const subscriptionIds = overdue.map((sub) => sub._id);
+      const agencyIds = overdue.map((sub) => sub.agency);
+
+      await this.agencySubscriptionModel
+        .updateMany({ _id: { $in: subscriptionIds } }, { status: 'EXPIRED' })
+        .exec();
+      await this.agencyModel
+        .updateMany({ _id: { $in: agencyIds } }, { subscriptionStatus: 'EXPIRED' })
+        .exec();
+
+      this.logger.log(`[ExpireSubscriptions] ${subscriptionIds.length} subscriptions expired`);
+    } catch (err) {
+      this.logger.error('[ExpireSubscriptions] failed', err);
     }
   }
 }

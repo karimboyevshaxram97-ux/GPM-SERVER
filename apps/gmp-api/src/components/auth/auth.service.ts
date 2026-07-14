@@ -1,4 +1,9 @@
-import { ConflictException, ForbiddenException, Injectable, UnauthorizedException } from '@nestjs/common';
+import {
+  ConflictException,
+  ForbiddenException,
+  Injectable,
+  UnauthorizedException,
+} from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import { ConfigService } from '@nestjs/config';
 import * as bcrypt from 'bcrypt';
@@ -7,7 +12,13 @@ import { UserService } from '../user/user.service';
 import { AuthResponse } from '../../libs/dto/auth/auth-response.type';
 import { LoginInput } from '../../libs/dto/auth/login.input';
 import { RefreshTokenInput } from '../../libs/dto/auth/refresh-token.input';
-import { AuthProvider, Message, SocialProfile, UserRole, UserStatus } from '../../libs';
+import {
+  AuthProvider,
+  Message,
+  SocialProfile,
+  UserRole,
+  UserStatus,
+} from '../../libs';
 
 @Injectable()
 export class AuthService {
@@ -23,7 +34,10 @@ export class AuthService {
 
     const autoEmail = `${input.phoneNumber.replace(/\D/g, '')}@gmp.app`;
     const hashedPassword = await bcrypt.hash(input.password, 10);
-    const allowedRole = input.role === UserRole.AGENCY_ADMIN ? UserRole.AGENCY_ADMIN : UserRole.USER;
+    const allowedRole =
+      input.role === UserRole.AGENCY_ADMIN
+        ? UserRole.AGENCY_ADMIN
+        : UserRole.USER;
     const user = await this.userService.create({
       firstName: input.firstName,
       lastName: input.lastName,
@@ -35,7 +49,10 @@ export class AuthService {
 
     const userObject = user.toObject ? user.toObject() : user;
     const refreshToken = this.generateRefreshToken(userObject);
-    await this.userService.updateRefreshTokenHash(user._id.toString(), refreshToken);
+    await this.userService.updateRefreshTokenHash(
+      user._id.toString(),
+      refreshToken,
+    );
 
     return {
       accessToken: this.generateAccessToken(userObject),
@@ -46,21 +63,31 @@ export class AuthService {
 
   async login(loginInput: LoginInput): Promise<AuthResponse> {
     let user = await this.userService.findByPhone(loginInput.phoneNumber, true);
-    if (!user) user = await this.userService.findByEmail(loginInput.phoneNumber, true);
+    if (!user)
+      user = await this.userService.findByEmail(loginInput.phoneNumber, true);
     if (!user) throw new UnauthorizedException(Message.NOT_AUTHENTICATED);
 
-    if (user.status === UserStatus.BANNED) throw new ForbiddenException(Message.NOT_ALLOWED_REQUEST);
+    if (user.status === UserStatus.BANNED)
+      throw new ForbiddenException(Message.NOT_ALLOWED_REQUEST);
 
-    if (!user.password) throw new UnauthorizedException(Message.LOGIN_WITH_SOCIAL);
+    if (!user.password)
+      throw new UnauthorizedException(Message.LOGIN_WITH_SOCIAL);
 
-    const passwordMatches = await bcrypt.compare(loginInput.password, user.password);
-    if (!passwordMatches) throw new UnauthorizedException(Message.WRONG_PASSWORD);
+    const passwordMatches = await bcrypt.compare(
+      loginInput.password,
+      user.password,
+    );
+    if (!passwordMatches)
+      throw new UnauthorizedException(Message.WRONG_PASSWORD);
 
     await this.userService.updateLastLoginAt(user._id.toString());
 
     const userObject = user.toObject ? user.toObject() : user;
     const refreshToken = this.generateRefreshToken(userObject);
-    await this.userService.updateRefreshTokenHash(user._id.toString(), refreshToken);
+    await this.userService.updateRefreshTokenHash(
+      user._id.toString(),
+      refreshToken,
+    );
 
     return {
       accessToken: this.generateAccessToken(userObject),
@@ -70,7 +97,10 @@ export class AuthService {
   }
 
   async socialLogin(profile: SocialProfile): Promise<AuthResponse> {
-    let user = await this.userService.findByProvider(profile.provider, profile.providerId);
+    let user = await this.userService.findByProvider(
+      profile.provider,
+      profile.providerId,
+    );
 
     if (user) {
       // Consent items may have been granted after the account was created
@@ -85,7 +115,10 @@ export class AuthService {
         if (byEmail.authProvider !== AuthProvider.EMAIL) {
           throw new ConflictException(Message.EMAIL_USED_OTHER_PROVIDER);
         }
-        user = await this.userService.linkSocialAccount(byEmail._id.toString(), profile);
+        user = await this.userService.linkSocialAccount(
+          byEmail._id.toString(),
+          profile,
+        );
       }
     }
 
@@ -93,13 +126,17 @@ export class AuthService {
       user = await this.userService.createSocialUser(profile);
     }
 
-    if (user.status === UserStatus.BANNED) throw new ForbiddenException(Message.NOT_ALLOWED_REQUEST);
+    if (user.status === UserStatus.BANNED)
+      throw new ForbiddenException(Message.NOT_ALLOWED_REQUEST);
 
     await this.userService.updateLastLoginAt(user._id.toString());
 
     const userObject = user.toObject ? user.toObject() : user;
     const refreshToken = this.generateRefreshToken(userObject);
-    await this.userService.updateRefreshTokenHash(user._id.toString(), refreshToken);
+    await this.userService.updateRefreshTokenHash(
+      user._id.toString(),
+      refreshToken,
+    );
 
     return {
       accessToken: this.generateAccessToken(userObject),
@@ -110,11 +147,14 @@ export class AuthService {
 
   async refreshToken(input: RefreshTokenInput): Promise<AuthResponse> {
     const refreshSecret = this.configService.get<string>('jwt.refreshSecret');
-    if (!refreshSecret) throw new UnauthorizedException(Message.NOT_AUTHENTICATED);
+    if (!refreshSecret)
+      throw new UnauthorizedException(Message.NOT_AUTHENTICATED);
 
     let payload: any;
     try {
-      payload = this.jwtService.verify(input.refreshToken, { secret: refreshSecret });
+      payload = this.jwtService.verify(input.refreshToken, {
+        secret: refreshSecret,
+      });
     } catch (err) {
       throw new UnauthorizedException(Message.NOT_AUTHENTICATED);
     }
@@ -124,14 +164,20 @@ export class AuthService {
       throw new UnauthorizedException(Message.NOT_AUTHENTICATED);
     }
 
-    const tokenMatches = await bcrypt.compare(input.refreshToken, user.refreshTokenHash);
+    const tokenMatches = await bcrypt.compare(
+      input.refreshToken,
+      user.refreshTokenHash,
+    );
     if (!tokenMatches) {
       throw new UnauthorizedException(Message.NOT_AUTHENTICATED);
     }
 
     const userObject = user.toObject ? user.toObject() : user;
     const refreshToken = this.generateRefreshToken(userObject);
-    await this.userService.updateRefreshTokenHash(user._id.toString(), refreshToken);
+    await this.userService.updateRefreshTokenHash(
+      user._id.toString(),
+      refreshToken,
+    );
 
     return {
       accessToken: this.generateAccessToken(userObject),
@@ -171,14 +217,14 @@ export class AuthService {
 
   private generateRefreshToken(user: any): string {
     const refreshSecret = this.configService.get<string>('jwt.refreshSecret');
-    if (!refreshSecret) throw new UnauthorizedException(Message.NOT_AUTHENTICATED);
+    if (!refreshSecret)
+      throw new UnauthorizedException(Message.NOT_AUTHENTICATED);
     const refreshExpiresIn =
-      this.configService.get<string>('jwt.refreshExpiresIn') ??
-      '604800';
+      this.configService.get<string>('jwt.refreshExpiresIn') ?? '604800';
 
-    return this.jwtService.sign(
-      { sub: user._id.toString() },
-      { secret: refreshSecret, expiresIn: refreshExpiresIn } as any,
-    );
+    return this.jwtService.sign({ sub: user._id.toString() }, {
+      secret: refreshSecret,
+      expiresIn: refreshExpiresIn,
+    } as any);
   }
 }

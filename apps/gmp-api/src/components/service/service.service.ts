@@ -1,8 +1,23 @@
-import { Injectable, BadRequestException, ForbiddenException, InternalServerErrorException } from '@nestjs/common';
+import {
+  Injectable,
+  BadRequestException,
+  ForbiddenException,
+  InternalServerErrorException,
+} from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model, PipelineStage, Types } from 'mongoose';
 import { Service, ServiceDocument } from '../../schemas/Service.model';
-import { CreateServiceInput, UpdateServiceInput } from '../../libs/dto/service/service.input';
+import {
+  Application,
+  ApplicationDocument,
+} from '../../schemas/Application.model';
+import { Review, ReviewDocument } from '../../schemas/Review.model';
+import { Like, LikeDocument } from '../../schemas/Like.model';
+import { View, ViewDocument } from '../../schemas/View.model';
+import {
+  CreateServiceInput,
+  UpdateServiceInput,
+} from '../../libs/dto/service/service.input';
 import { ServicesInquiryInput } from '../../libs/dto/service/services-inquiry.input';
 import { ServicesInquiryResult } from '../../libs/dto/service/services-inquiry.result';
 import {
@@ -21,11 +36,22 @@ import { ViewService } from '../view/view.service';
 @Injectable()
 export class ServiceService {
   constructor(
-    @InjectModel(Service.name) private readonly serviceModel: Model<ServiceDocument>,
+    @InjectModel(Service.name)
+    private readonly serviceModel: Model<ServiceDocument>,
+    @InjectModel(Application.name)
+    private readonly applicationModel: Model<ApplicationDocument>,
+    @InjectModel(Review.name)
+    private readonly reviewModel: Model<ReviewDocument>,
+    @InjectModel(Like.name) private readonly likeModel: Model<LikeDocument>,
+    @InjectModel(View.name) private readonly viewModel: Model<ViewDocument>,
     private readonly viewService: ViewService,
   ) {}
 
-  async getServices(input: ServicesInquiryInput, userId?: string, canViewRestricted = false): Promise<ServicesInquiryResult> {
+  async getServices(
+    input: ServicesInquiryInput,
+    userId?: string,
+    canViewRestricted = false,
+  ): Promise<ServicesInquiryResult> {
     const {
       text,
       serviceType,
@@ -89,7 +115,17 @@ export class ServiceService {
           localField: 'agency',
           foreignField: '_id',
           as: 'agencyInfo',
-          pipeline: [{ $project: { name: 1, logo: 1, slug: 1, status: 1, verificationStatus: 1 } }],
+          pipeline: [
+            {
+              $project: {
+                name: 1,
+                logo: 1,
+                slug: 1,
+                status: 1,
+                verificationStatus: 1,
+              },
+            },
+          ],
         },
       },
     ];
@@ -117,13 +153,26 @@ export class ServiceService {
       },
     );
 
-    const result = await this.serviceModel.aggregate<ServicesInquiryResult>(pipeline);
+    const result =
+      await this.serviceModel.aggregate<ServicesInquiryResult>(pipeline);
 
-    if (!result.length) throw new InternalServerErrorException(Message.NO_DATA_FOUND);
-    return result[0];
+    if (!result.length)
+      throw new InternalServerErrorException(Message.NO_DATA_FOUND);
+    // $facet'dagi $count bosqichi hech narsa topmasa hujjat umuman chiqarmaydi —
+    // metaCounter[0].total'ga tayanuvchi klientlar uchun bo'sh holatni normalizatsiya qilamiz.
+    return {
+      ...result[0],
+      metaCounter: result[0].metaCounter?.length
+        ? result[0].metaCounter
+        : [{ total: 0 }],
+    };
   }
 
-  async getServiceDetail(id: string, userId?: string, canViewRestricted = false): Promise<ServiceDocument | null> {
+  async getServiceDetail(
+    id: string,
+    userId?: string,
+    canViewRestricted = false,
+  ): Promise<ServiceDocument | null> {
     const userObjId = userId ? new Types.ObjectId(userId) : null;
 
     const result = await this.serviceModel.aggregate([
@@ -131,10 +180,12 @@ export class ServiceService {
       lookupAuthUserLiked(userObjId, '$_id', LikeTargetType.SERVICE),
     ]);
 
-    if (!result.length) throw new InternalServerErrorException(Message.SERVICE_NOT_FOUND);
+    if (!result.length)
+      throw new InternalServerErrorException(Message.SERVICE_NOT_FOUND);
     if (
       !canViewRestricted &&
-      (result[0].status !== ServiceStatus.ACTIVE || result[0].visibility !== ServiceVisibility.PUBLIC)
+      (result[0].status !== ServiceStatus.ACTIVE ||
+        result[0].visibility !== ServiceVisibility.PUBLIC)
     ) {
       throw new ForbiddenException(Message.NOT_ALLOWED_REQUEST);
     }
@@ -148,7 +199,9 @@ export class ServiceService {
   }
 
   async findByAgency(agencyId: string): Promise<ServiceDocument[]> {
-    return this.serviceModel.find({ agency: new Types.ObjectId(agencyId) }).exec();
+    return this.serviceModel
+      .find({ agency: new Types.ObjectId(agencyId) })
+      .exec();
   }
 
   async findPublicByAgency(agencyId: string): Promise<ServiceDocument[]> {
@@ -161,7 +214,10 @@ export class ServiceService {
       .exec();
   }
 
-  async create(input: CreateServiceInput, agencyId: string): Promise<ServiceDocument> {
+  async create(
+    input: CreateServiceInput,
+    agencyId: string,
+  ): Promise<ServiceDocument> {
     try {
       return await this.serviceModel.create({
         ...input,
@@ -173,16 +229,33 @@ export class ServiceService {
     }
   }
 
-  async update(id: string, input: UpdateServiceInput): Promise<ServiceDocument> {
-    const result = await this.serviceModel.findByIdAndUpdate(id, input, { new: true }).exec();
+  async update(
+    id: string,
+    input: UpdateServiceInput,
+  ): Promise<ServiceDocument> {
+    const result = await this.serviceModel
+      .findByIdAndUpdate(id, input, { new: true })
+      .exec();
     if (!result) throw new InternalServerErrorException(Message.UPDATE_FAILED);
     return result;
   }
 
+  // Bog'liq Application/Review/Like/View yozuvlarini ham tozalab, so'ng Service'ni o'chiradi.
   async delete(id: string): Promise<ServiceDocument> {
-    const result = await this.serviceModel.findByIdAndDelete(id).exec();
-    if (!result) throw new InternalServerErrorException(Message.REMOVE_FAILED);
-    return result;
+    const service = await this.serviceModel.findById(id).exec();
+    if (!service) throw new InternalServerErrorException(Message.REMOVE_FAILED);
+
+    await this.applicationModel.deleteMany({ service: service._id }).exec();
+    await this.reviewModel.deleteMany({ service: service._id }).exec();
+    await this.likeModel
+      .deleteMany({ targetId: service._id, targetType: LikeTargetType.SERVICE })
+      .exec();
+    await this.viewModel
+      .deleteMany({ targetId: service._id, targetType: ViewTargetType.SERVICE })
+      .exec();
+
+    await service.deleteOne();
+    return service;
   }
 
   async reserveApplicationSlot(id: string): Promise<boolean> {
@@ -193,9 +266,13 @@ export class ServiceService {
           $or: [
             { maxApplicationCount: { $exists: false } },
             { maxApplicationCount: null },
-            { $expr: { $lt: ['$currentApplicationCount', '$maxApplicationCount'] } },
+            {
+              $expr: {
+                $lt: ['$currentApplicationCount', '$maxApplicationCount'],
+              },
+            },
           ],
-        } as any,
+        },
         { $inc: { currentApplicationCount: 1 } },
         { new: true },
       )
@@ -212,14 +289,26 @@ export class ServiceService {
       .exec();
   }
 
-  async serviceStatsEditor(input: StatisticModifier): Promise<ServiceDocument | null> {
+  async serviceStatsEditor(
+    input: StatisticModifier,
+  ): Promise<ServiceDocument | null> {
     const { _id, targetKey, modifier } = input;
     return this.serviceModel
-      .findByIdAndUpdate(_id, { $inc: { [targetKey]: modifier } }, { new: true })
+      .findByIdAndUpdate(
+        _id,
+        { $inc: { [targetKey]: modifier } },
+        { new: true },
+      )
       .exec();
   }
 
-  async updateReviewStats(id: string, averageRating: number, totalReviews: number): Promise<void> {
-    await this.serviceModel.findByIdAndUpdate(id, { averageRating, totalReviews }).exec();
+  async updateReviewStats(
+    id: string,
+    averageRating: number,
+    totalReviews: number,
+  ): Promise<void> {
+    await this.serviceModel
+      .findByIdAndUpdate(id, { averageRating, totalReviews })
+      .exec();
   }
 }

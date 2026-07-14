@@ -1,6 +1,9 @@
 import { Resolver, Query, Args } from '@nestjs/graphql';
 import { AnalyticsService } from './analytics.service';
-import { AgencyStatType, ServiceStatType } from '../../libs/dto/analytics/analytics.type';
+import {
+  AgencyStatType,
+  ServiceStatType,
+} from '../../libs/dto/analytics/analytics.type';
 
 @Resolver()
 export class AnalyticsResolver {

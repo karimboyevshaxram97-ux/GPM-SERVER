@@ -1,5 +1,9 @@
 import { Resolver, Query, Mutation, Args } from '@nestjs/graphql';
-import { BadRequestException, ForbiddenException, NotFoundException } from '@nestjs/common';
+import {
+  BadRequestException,
+  ForbiddenException,
+  NotFoundException,
+} from '@nestjs/common';
 import { ReviewService } from './review.service';
 import { ReviewType } from '../../libs/dto/review/review.type';
 import { CreateReviewInput } from '../../libs/dto/review/review.input';
@@ -21,14 +25,18 @@ export class ReviewResolver {
 
   @Public()
   @Query(() => [ReviewType], { name: 'reviewsByAgency' })
-  async reviewsByAgency(@Args('agencyId') agencyId: string): Promise<ReviewType[]> {
+  async reviewsByAgency(
+    @Args('agencyId') agencyId: string,
+  ): Promise<ReviewType[]> {
     console.log('Query: reviewsByAgency');
     return this.reviewService.findByAgency(agencyId) as any;
   }
 
   @Public()
   @Query(() => [ReviewType], { name: 'reviewsByService' })
-  async reviewsByService(@Args('serviceId') serviceId: string): Promise<ReviewType[]> {
+  async reviewsByService(
+    @Args('serviceId') serviceId: string,
+  ): Promise<ReviewType[]> {
     console.log('Query: reviewsByService');
     return this.reviewService.findByService(serviceId) as any;
   }
@@ -58,13 +66,18 @@ export class ReviewResolver {
     if (alreadyReviewed) throw new BadRequestException('Review already exists');
 
     if (input.serviceId) {
-      const applications = await this.applicationService.findByService(input.serviceId);
+      const applications = await this.applicationService.findByService(
+        input.serviceId,
+      );
       const hasCompletedApplication = applications.some(
         (application) =>
           application.user.toString() === user._id.toString() &&
           application.status === ApplicationStatus.COMPLETED,
       );
-      if (!hasCompletedApplication) throw new ForbiddenException('Completed application is required to review');
+      if (!hasCompletedApplication)
+        throw new ForbiddenException(
+          'Completed application is required to review',
+        );
     }
 
     return this.reviewService.create(input, user._id.toString()) as any;

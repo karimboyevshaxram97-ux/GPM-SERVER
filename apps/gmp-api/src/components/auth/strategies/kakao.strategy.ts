@@ -8,7 +8,8 @@ import { AuthProvider, SocialProfile } from '../../../libs';
 export class KakaoStrategy extends PassportStrategy(Strategy, 'kakao') {
   constructor(configService: ConfigService) {
     super({
-      clientID: configService.get<string>('oauth.kakao.clientId') || 'not-configured',
+      clientID:
+        configService.get<string>('oauth.kakao.clientId') || 'not-configured',
       // Kakao client secret is optional (enabled separately in the Kakao console)
       clientSecret: configService.get<string>('oauth.kakao.clientSecret') || '',
       callbackURL:
@@ -17,12 +18,18 @@ export class KakaoStrategy extends PassportStrategy(Strategy, 'kakao') {
     });
   }
 
-  validate(accessToken: string, refreshToken: string, profile: any): SocialProfile {
+  validate(
+    accessToken: string,
+    refreshToken: string,
+    profile: any,
+  ): SocialProfile {
     const account = profile._json?.kakao_account;
     // Kakao returns the email only when the user consented; trust it only when
     // Kakao itself marks it valid and verified.
     const email =
-      account?.email && account?.is_email_valid !== false && account?.is_email_verified !== false
+      account?.email &&
+      account?.is_email_valid !== false &&
+      account?.is_email_verified !== false
         ? account.email
         : undefined;
 
@@ -30,8 +37,11 @@ export class KakaoStrategy extends PassportStrategy(Strategy, 'kakao') {
       provider: AuthProvider.KAKAO,
       providerId: String(profile.id),
       email,
-      name: account?.profile?.nickname || profile.displayName || profile.username,
-      avatarUrl: account?.profile?.profile_image_url || profile._json?.properties?.profile_image,
+      name:
+        account?.profile?.nickname || profile.displayName || profile.username,
+      avatarUrl:
+        account?.profile?.profile_image_url ||
+        profile._json?.properties?.profile_image,
     };
   }
 }

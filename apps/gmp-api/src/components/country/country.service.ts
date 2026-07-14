@@ -2,11 +2,16 @@ import { Injectable } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
 import { Country, CountryDocument } from '../../schemas/Country.model';
-import { CreateCountryInput, CountryFilterInput } from '../../libs/dto/country/country.input';
+import {
+  CreateCountryInput,
+  CountryFilterInput,
+} from '../../libs/dto/country/country.input';
 
 @Injectable()
 export class CountryService {
-  constructor(@InjectModel(Country.name) private countryModel: Model<CountryDocument>) {}
+  constructor(
+    @InjectModel(Country.name) private countryModel: Model<CountryDocument>,
+  ) {}
 
   async findAll(filter?: CountryFilterInput): Promise<CountryDocument[]> {
     const query: any = {};
@@ -36,7 +41,10 @@ export class CountryService {
     return country.save();
   }
 
-  async update(id: string, data: Partial<CreateCountryInput>): Promise<CountryDocument | null> {
+  async update(
+    id: string,
+    data: Partial<CreateCountryInput>,
+  ): Promise<CountryDocument | null> {
     return this.countryModel.findByIdAndUpdate(id, data, { new: true }).exec();
   }
 

@@ -14,16 +14,19 @@ export default registerAs('oauth', () => ({
   google: {
     clientId: process.env.GOOGLE_CLIENT_ID || '',
     clientSecret: process.env.GOOGLE_CLIENT_SECRET || '',
-    callbackUrl: process.env.GOOGLE_CALLBACK_URL || `${apiUrl()}/auth/google/callback`,
+    callbackUrl:
+      process.env.GOOGLE_CALLBACK_URL || `${apiUrl()}/auth/google/callback`,
   },
   kakao: {
     clientId: process.env.KAKAO_CLIENT_ID || '',
     clientSecret: process.env.KAKAO_CLIENT_SECRET || '',
-    callbackUrl: process.env.KAKAO_CALLBACK_URL || `${apiUrl()}/auth/kakao/callback`,
+    callbackUrl:
+      process.env.KAKAO_CALLBACK_URL || `${apiUrl()}/auth/kakao/callback`,
   },
   naver: {
     clientId: process.env.NAVER_CLIENT_ID || '',
     clientSecret: process.env.NAVER_CLIENT_SECRET || '',
-    callbackUrl: process.env.NAVER_CALLBACK_URL || `${apiUrl()}/auth/naver/callback`,
+    callbackUrl:
+      process.env.NAVER_CALLBACK_URL || `${apiUrl()}/auth/naver/callback`,
   },
 }));

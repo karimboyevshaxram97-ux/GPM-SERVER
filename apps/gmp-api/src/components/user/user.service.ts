@@ -1,4 +1,8 @@
-import { Injectable, BadRequestException, InternalServerErrorException } from '@nestjs/common';
+import {
+  Injectable,
+  BadRequestException,
+  InternalServerErrorException,
+} from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
 import * as bcrypt from 'bcrypt';
@@ -20,19 +24,28 @@ interface InternalCreateUserInput {
 export class UserService {
   constructor(@InjectModel(User.name) private userModel: Model<UserDocument>) {}
 
-  async findByEmail(email: string, withPassword = false): Promise<UserDocument | null> {
+  async findByEmail(
+    email: string,
+    withPassword = false,
+  ): Promise<UserDocument | null> {
     const query = this.userModel.findOne({ email: email.toLowerCase() });
     if (withPassword) query.select('+password');
     return query.exec();
   }
 
-  async findByPhone(phoneNumber: string, withPassword = false): Promise<UserDocument | null> {
+  async findByPhone(
+    phoneNumber: string,
+    withPassword = false,
+  ): Promise<UserDocument | null> {
     const query = this.userModel.findOne({ phoneNumber });
     if (withPassword) query.select('+password');
     return query.exec();
   }
 
-  async findByName(name: string, withPassword = false): Promise<UserDocument | null> {
+  async findByName(
+    name: string,
+    withPassword = false,
+  ): Promise<UserDocument | null> {
     const query = this.userModel.findOne({ firstName: name });
     if (withPassword) query.select('+password');
     return query.exec();
@@ -58,7 +71,10 @@ export class UserService {
     }
   }
 
-  async updateMe(userId: string, input: UpdateUserInput): Promise<UserDocument> {
+  async updateMe(
+    userId: string,
+    input: UpdateUserInput,
+  ): Promise<UserDocument> {
     try {
       const result = await this.userModel
         .findByIdAndUpdate(
@@ -67,7 +83,8 @@ export class UserService {
           { new: true, runValidators: true },
         )
         .exec();
-      if (!result) throw new InternalServerErrorException(Message.UPDATE_FAILED);
+      if (!result)
+        throw new InternalServerErrorException(Message.UPDATE_FAILED);
       return result;
     } catch (err: any) {
       if (err?.code === 11000) {
@@ -77,13 +94,18 @@ export class UserService {
     }
   }
 
-  async updateRefreshTokenHash(userId: string, refreshToken: string): Promise<void> {
+  async updateRefreshTokenHash(
+    userId: string,
+    refreshToken: string,
+  ): Promise<void> {
     const refreshTokenHash = await bcrypt.hash(refreshToken, 10);
     await this.userModel.findByIdAndUpdate(userId, { refreshTokenHash }).exec();
   }
 
   async removeRefreshTokenHash(userId: string): Promise<void> {
-    await this.userModel.findByIdAndUpdate(userId, { $unset: { refreshTokenHash: '' } }).exec();
+    await this.userModel
+      .findByIdAndUpdate(userId, { $unset: { refreshTokenHash: '' } })
+      .exec();
   }
 
   async findByIdWithRefreshToken(id: string): Promise<UserDocument | null> {
@@ -91,7 +113,9 @@ export class UserService {
   }
 
   async updateLastLoginAt(userId: string): Promise<void> {
-    await this.userModel.findByIdAndUpdate(userId, { lastLoginAt: new Date() }).exec();
+    await this.userModel
+      .findByIdAndUpdate(userId, { lastLoginAt: new Date() })
+      .exec();
   }
 
   async updateRole(userId: string, role: UserRole): Promise<void> {
@@ -118,8 +142,13 @@ export class UserService {
     return this.userModel.create(data);
   }
 
-  async findByProvider(provider: AuthProvider, providerId: string): Promise<UserDocument | null> {
-    return this.userModel.findOne({ authProvider: provider, providerId }).exec();
+  async findByProvider(
+    provider: AuthProvider,
+    providerId: string,
+  ): Promise<UserDocument | null> {
+    return this.userModel
+      .findOne({ authProvider: provider, providerId })
+      .exec();
   }
 
   async createSocialUser(profile: SocialProfile): Promise<UserDocument> {
@@ -142,7 +171,10 @@ export class UserService {
 
   // Fill in profile fields the provider withheld on an earlier login (e.g. the
   // consent item was enabled in the provider console after the account was made)
-  async refreshSocialProfile(user: UserDocument, profile: SocialProfile): Promise<UserDocument> {
+  async refreshSocialProfile(
+    user: UserDocument,
+    profile: SocialProfile,
+  ): Promise<UserDocument> {
     let changed = false;
     if (!user.avatar && profile.avatarUrl) {
       user.avatar = profile.avatarUrl;
@@ -156,7 +188,10 @@ export class UserService {
     return changed ? user.save() : user;
   }
 
-  async linkSocialAccount(userId: string, profile: SocialProfile): Promise<UserDocument> {
+  async linkSocialAccount(
+    userId: string,
+    profile: SocialProfile,
+  ): Promise<UserDocument> {
     const user = await this.userModel.findById(userId).exec();
     if (!user) throw new BadRequestException(Message.USER_NOT_FOUND);
 
@@ -164,7 +199,8 @@ export class UserService {
     user.providerId = profile.providerId;
     if (!user.avatar && profile.avatarUrl) user.avatar = profile.avatarUrl;
     // The provider confirmed ownership of this email during OAuth consent
-    if (profile.email && user.email === profile.email.toLowerCase()) user.emailVerified = true;
+    if (profile.email && user.email === profile.email.toLowerCase())
+      user.emailVerified = true;
     return user.save();
   }
 }

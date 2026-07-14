@@ -12,12 +12,18 @@ import { LikeTargetType } from '../../libs/enums';
 export class LikeService {
   constructor(
     @InjectModel(Like.name) private readonly likeModel: Model<LikeDocument>,
-    @InjectModel(Agency.name) private readonly agencyModel: Model<AgencyDocument>,
-    @InjectModel(Service.name) private readonly serviceModel: Model<ServiceDocument>,
+    @InjectModel(Agency.name)
+    private readonly agencyModel: Model<AgencyDocument>,
+    @InjectModel(Service.name)
+    private readonly serviceModel: Model<ServiceDocument>,
     @InjectModel(Photo.name) private readonly photoModel: Model<PhotoDocument>,
   ) {}
 
-  async toggleLike(userId: string, targetId: string, targetType: LikeTargetType): Promise<LikeResult> {
+  async toggleLike(
+    userId: string,
+    targetId: string,
+    targetType: LikeTargetType,
+  ): Promise<LikeResult> {
     await this.assertTargetExists(targetId, targetType);
 
     const existing = await this.likeModel
@@ -47,7 +53,11 @@ export class LikeService {
     return { isLiked: !existing, likeCount };
   }
 
-  async getLikeStatus(userId: string, targetId: string, targetType: LikeTargetType): Promise<LikeResult> {
+  async getLikeStatus(
+    userId: string,
+    targetId: string,
+    targetType: LikeTargetType,
+  ): Promise<LikeResult> {
     await this.assertTargetExists(targetId, targetType);
 
     const existing = await this.likeModel
@@ -71,12 +81,23 @@ export class LikeService {
     return this.serviceModel;
   }
 
-  private async updateLikeCount(targetId: string, targetType: LikeTargetType, delta: number): Promise<void> {
-    await this.targetModel(targetType).findByIdAndUpdate(targetId, { $inc: { likeCount: delta } }).exec();
+  private async updateLikeCount(
+    targetId: string,
+    targetType: LikeTargetType,
+    delta: number,
+  ): Promise<void> {
+    await this.targetModel(targetType)
+      .findByIdAndUpdate(targetId, { $inc: { likeCount: delta } })
+      .exec();
   }
 
-  private async assertTargetExists(targetId: string, targetType: LikeTargetType): Promise<void> {
-    const exists = await this.targetModel(targetType).exists({ _id: new Types.ObjectId(targetId) });
+  private async assertTargetExists(
+    targetId: string,
+    targetType: LikeTargetType,
+  ): Promise<void> {
+    const exists = await this.targetModel(targetType).exists({
+      _id: new Types.ObjectId(targetId),
+    });
     if (!exists) throw new NotFoundException('Like target not found');
   }
 }

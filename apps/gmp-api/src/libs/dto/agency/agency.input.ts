@@ -1,5 +1,12 @@
 import { InputType, Field, Float } from '@nestjs/graphql';
-import { IsEmail, IsArray, IsOptional, IsNumber, IsString, ValidateNested } from 'class-validator';
+import {
+  IsEmail,
+  IsArray,
+  IsOptional,
+  IsNumber,
+  IsString,
+  ValidateNested,
+} from 'class-validator';
 import { Type } from 'class-transformer';
 import { LocalizedStringInput } from '../common/localized-string.input';
 

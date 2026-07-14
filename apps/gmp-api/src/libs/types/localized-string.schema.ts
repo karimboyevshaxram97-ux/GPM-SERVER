@@ -15,4 +15,5 @@ export class LocalizedString {
   ko?: string;
 }
 
-export const LocalizedStringSchema = SchemaFactory.createForClass(LocalizedString);
+export const LocalizedStringSchema =
+  SchemaFactory.createForClass(LocalizedString);

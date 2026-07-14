@@ -1,7 +1,14 @@
 import { Resolver, Query, Mutation, Args, Int } from '@nestjs/graphql';
 import { MessagingService } from './messaging.service';
-import { ConversationType, MessageType } from '../../libs/dto/messaging/messaging.type';
-import { CreateConversationInput, SendMessageInput, EditMessageInput } from '../../libs/dto/messaging/messaging.input';
+import {
+  ConversationType,
+  MessageType,
+} from '../../libs/dto/messaging/messaging.type';
+import {
+  CreateConversationInput,
+  SendMessageInput,
+  EditMessageInput,
+} from '../../libs/dto/messaging/messaging.input';
 import { CurrentUser } from '../auth/decorators/current-user.decorator';
 
 @Resolver()
@@ -14,7 +21,11 @@ export class MessagingResolver {
     @CurrentUser() user: any,
   ): Promise<ConversationType> {
     console.log('Mutation: createOrGetConversation');
-    return this.messagingService.getOrCreateConversation(user._id.toString(), input.recipientId, input.agencyId) as any;
+    return this.messagingService.getOrCreateConversation(
+      user._id.toString(),
+      input.recipientId,
+      input.agencyId,
+    ) as any;
   }
 
   @Query(() => [ConversationType], { name: 'myConversations' })
@@ -33,7 +44,12 @@ export class MessagingResolver {
     console.log('Query: conversationMessages');
     const safeLimit = Math.min(Math.max(limit ?? 50, 1), 100);
     const safeSkip = Math.max(skip ?? 0, 0);
-    return this.messagingService.getConversationMessages(conversationId, user._id.toString(), safeLimit, safeSkip) as any;
+    return this.messagingService.getConversationMessages(
+      conversationId,
+      user._id.toString(),
+      safeLimit,
+      safeSkip,
+    ) as any;
   }
 
   @Mutation(() => MessageType, { name: 'sendMessage' })
@@ -42,7 +58,12 @@ export class MessagingResolver {
     @CurrentUser() user: any,
   ): Promise<MessageType> {
     console.log('Mutation: sendMessage');
-    return this.messagingService.sendMessage(input.conversationId, user._id.toString(), input.text, input.attachmentUrls) as any;
+    return this.messagingService.sendMessage(
+      input.conversationId,
+      user._id.toString(),
+      input.text,
+      input.attachmentUrls,
+    ) as any;
   }
 
   @Mutation(() => MessageType, { name: 'editMessage' })
@@ -51,7 +72,11 @@ export class MessagingResolver {
     @CurrentUser() user: any,
   ): Promise<MessageType> {
     console.log('Mutation: editMessage');
-    return this.messagingService.editMessage(input.messageId, user._id.toString(), input.text) as any;
+    return this.messagingService.editMessage(
+      input.messageId,
+      user._id.toString(),
+      input.text,
+    ) as any;
   }
 
   @Mutation(() => Boolean, { name: 'markConversationAsRead' })
@@ -60,7 +85,10 @@ export class MessagingResolver {
     @CurrentUser() user: any,
   ): Promise<boolean> {
     console.log('Mutation: markConversationAsRead');
-    return this.messagingService.markConversationAsRead(conversationId, user._id.toString());
+    return this.messagingService.markConversationAsRead(
+      conversationId,
+      user._id.toString(),
+    );
   }
 
   @Mutation(() => ConversationType, { name: 'blockConversation' })
@@ -69,6 +97,9 @@ export class MessagingResolver {
     @CurrentUser() user: any,
   ): Promise<ConversationType> {
     console.log('Mutation: blockConversation');
-    return this.messagingService.blockConversation(conversationId, user._id.toString()) as any;
+    return this.messagingService.blockConversation(
+      conversationId,
+      user._id.toString(),
+    ) as any;
   }
 }

@@ -11,7 +11,10 @@ import {
   SupportTicketsInquiryInput,
   UpdateSupportTicketStatusInput,
 } from '../../libs/dto/support/support.input';
-import { SupportTicketType, SupportTicketsResult } from '../../libs/dto/support/support.type';
+import {
+  SupportTicketType,
+  SupportTicketsResult,
+} from '../../libs/dto/support/support.type';
 
 @Resolver(() => SupportTicketType)
 export class SupportResolver {

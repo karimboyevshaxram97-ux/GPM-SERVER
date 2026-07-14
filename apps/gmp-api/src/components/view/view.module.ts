@@ -6,6 +6,7 @@ import { Service, ServiceSchema } from '../../schemas/Service.model';
 import { Photo, PhotoSchema } from '../../schemas/Photo.model';
 import { ViewService } from './view.service';
 import { ViewResolver } from './view.resolver';
+import { AnalyticsModule } from '../analytics/analytics.module';
 
 @Module({
   imports: [
@@ -15,6 +16,7 @@ import { ViewResolver } from './view.resolver';
       { name: Service.name, schema: ServiceSchema },
       { name: Photo.name, schema: PhotoSchema },
     ]),
+    AnalyticsModule,
   ],
   providers: [ViewService, ViewResolver],
   exports: [ViewService],

@@ -20,7 +20,7 @@ export class AuthResolver {
   @Mutation(() => AuthResponse, { name: 'register' })
   async register(@Args('input') input: RegisterInput): Promise<AuthResponse> {
     console.log('Mutation: register');
-    return this.authService.register(input as any);
+    return this.authService.register(input);
   }
 
   @Public()
@@ -32,7 +32,9 @@ export class AuthResolver {
 
   @Public()
   @Mutation(() => AuthResponse, { name: 'refreshToken' })
-  async refreshToken(@Args('input') input: RefreshTokenInput): Promise<AuthResponse> {
+  async refreshToken(
+    @Args('input') input: RefreshTokenInput,
+  ): Promise<AuthResponse> {
     console.log('Mutation: refreshToken');
     return this.authService.refreshToken(input);
   }

@@ -2,7 +2,11 @@ import { LikeTargetType } from '../enums';
 
 // Authenticated user liked the target?
 // userId: ObjectId or null, targetRefId: pipeline field ref (e.g. '$_id'), targetType: enum string
-export const lookupAuthUserLiked = (userId: any, targetRefId: string, targetType: LikeTargetType) => ({
+export const lookupAuthUserLiked = (
+  userId: any,
+  targetRefId: string,
+  targetType: LikeTargetType,
+) => ({
   $lookup: {
     from: 'likes',
     let: { ltargetId: targetRefId, luserId: userId },

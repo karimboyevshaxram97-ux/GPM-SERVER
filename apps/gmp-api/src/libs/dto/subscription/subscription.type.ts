@@ -1,5 +1,10 @@
 import { ObjectType, Field, ID, Int, Float } from '@nestjs/graphql';
-import { PlanStatus, SupportLevel, SubscriptionStatus, BillingCycle } from '../../enums';
+import {
+  PlanStatus,
+  SupportLevel,
+  SubscriptionStatus,
+  BillingCycle,
+} from '../../enums';
 
 @ObjectType()
 export class PlanFeatureType {

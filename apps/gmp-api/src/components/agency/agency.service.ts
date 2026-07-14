@@ -1,8 +1,32 @@
-import { Injectable, BadRequestException, ForbiddenException, InternalServerErrorException } from '@nestjs/common';
+import {
+  Injectable,
+  Inject,
+  forwardRef,
+  BadRequestException,
+  ForbiddenException,
+  InternalServerErrorException,
+} from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model, PipelineStage, Types } from 'mongoose';
 import { Agency, AgencyDocument } from '../../schemas/Agency.model';
-import { CreateAgencyInput, UpdateAgencyInput } from '../../libs/dto/agency/agency.input';
+import { Service, ServiceDocument } from '../../schemas/Service.model';
+import { Review, ReviewDocument } from '../../schemas/Review.model';
+import { Follow, FollowDocument } from '../../schemas/Follow.model';
+import { Like, LikeDocument } from '../../schemas/Like.model';
+import { View, ViewDocument } from '../../schemas/View.model';
+import { Photo, PhotoDocument } from '../../schemas/Photo.model';
+import {
+  PhotoComment,
+  PhotoCommentDocument,
+} from '../../schemas/PhotoComment.model';
+import {
+  AgencySubscription,
+  AgencySubscriptionDocument,
+} from '../../schemas/AgencySubscription.model';
+import {
+  CreateAgencyInput,
+  UpdateAgencyInput,
+} from '../../libs/dto/agency/agency.input';
 import { AgenciesInquiryInput } from '../../libs/dto/agency/agencies-inquiry.input';
 import { AgenciesForMapInput } from '../../libs/dto/agency/agencies-for-map.input';
 import { AgenciesInquiryResult } from '../../libs/dto/agency/agencies-inquiry.result';
@@ -17,16 +41,36 @@ import {
   ViewTargetType,
 } from '../../libs/enums';
 import { Message, T, StatisticModifier } from '../../libs';
-import { lookupAuthUserLiked, lookupAuthUserFollowed } from '../../libs/config/aggregation';
+import {
+  lookupAuthUserLiked,
+  lookupAuthUserFollowed,
+} from '../../libs/config/aggregation';
 import { ViewService } from '../view/view.service';
 import { UserService } from '../user/user.service';
+import { ServiceService } from '../service/service.service';
 
 @Injectable()
 export class AgencyService {
   constructor(
-    @InjectModel(Agency.name) private readonly agencyModel: Model<AgencyDocument>,
+    @InjectModel(Agency.name)
+    private readonly agencyModel: Model<AgencyDocument>,
+    @InjectModel(Service.name)
+    private readonly serviceModel: Model<ServiceDocument>,
+    @InjectModel(Review.name)
+    private readonly reviewModel: Model<ReviewDocument>,
+    @InjectModel(Follow.name)
+    private readonly followModel: Model<FollowDocument>,
+    @InjectModel(Like.name) private readonly likeModel: Model<LikeDocument>,
+    @InjectModel(View.name) private readonly viewModel: Model<ViewDocument>,
+    @InjectModel(Photo.name) private readonly photoModel: Model<PhotoDocument>,
+    @InjectModel(PhotoComment.name)
+    private readonly photoCommentModel: Model<PhotoCommentDocument>,
+    @InjectModel(AgencySubscription.name)
+    private readonly agencySubscriptionModel: Model<AgencySubscriptionDocument>,
     private readonly viewService: ViewService,
     private readonly userService: UserService,
+    @Inject(forwardRef(() => ServiceService))
+    private readonly serviceService: ServiceService,
   ) {}
 
   private normalizeAgency(agency: any): any {
@@ -60,11 +104,15 @@ export class AgencyService {
       operatingCountries: item.operatingCountries ?? [],
       admins: item.admins ?? [],
       status: item.status ?? AgencyStatus.ACTIVE,
-      verificationStatus: item.verificationStatus ?? AgencyVerificationStatus.PENDING,
+      verificationStatus:
+        item.verificationStatus ?? AgencyVerificationStatus.PENDING,
     };
   }
 
-  async getAgencies(input: AgenciesInquiryInput, userId?: string): Promise<AgenciesInquiryResult> {
+  async getAgencies(
+    input: AgenciesInquiryInput,
+    userId?: string,
+  ): Promise<AgenciesInquiryResult> {
     const { text, country, serviceType, sort, direction, page, limit } = input;
 
     const match: T = {
@@ -88,9 +136,7 @@ export class AgencyService {
     const skip = (page - 1) * limit;
     const userObjId = userId ? new Types.ObjectId(userId) : null;
 
-    const pipeline: PipelineStage[] = [
-      { $match: match },
-    ];
+    const pipeline: PipelineStage[] = [{ $match: match }];
 
     if (serviceType) {
       pipeline.push(
@@ -131,16 +177,28 @@ export class AgencyService {
       },
     );
 
-    const result = await this.agencyModel.aggregate<AgenciesInquiryResult>(pipeline);
+    const result =
+      await this.agencyModel.aggregate<AgenciesInquiryResult>(pipeline);
 
-    if (!result.length) throw new InternalServerErrorException(Message.NO_DATA_FOUND);
+    if (!result.length)
+      throw new InternalServerErrorException(Message.NO_DATA_FOUND);
     return {
       ...result[0],
-      list: (result[0].list ?? []).map((agency: any) => this.normalizeAgency(agency)),
+      list: (result[0].list ?? []).map((agency: any) =>
+        this.normalizeAgency(agency),
+      ),
+      // $facet'dagi $count bosqichi hech narsa topmasa hujjat umuman chiqarmaydi —
+      // metaCounter[0].total'ga tayanuvchi klientlar uchun bo'sh holatni normalizatsiya qilamiz.
+      metaCounter: result[0].metaCounter?.length
+        ? result[0].metaCounter
+        : [{ total: 0 }],
     };
   }
 
-  async getAgencyDetail(id: string, user?: any): Promise<AgencyDocument | null> {
+  async getAgencyDetail(
+    id: string,
+    user?: any,
+  ): Promise<AgencyDocument | null> {
     const userId = user?._id?.toString?.();
     const userObjId = userId ? new Types.ObjectId(userId) : null;
 
@@ -150,13 +208,15 @@ export class AgencyService {
       lookupAuthUserFollowed(userObjId, '$_id'),
     ]);
 
-    if (!result.length) throw new InternalServerErrorException(Message.AGENCY_NOT_FOUND);
+    if (!result.length)
+      throw new InternalServerErrorException(Message.AGENCY_NOT_FOUND);
 
     const agency = this.normalizeAgency(result[0]);
     const canViewRestricted = this.isAgencyAdmin(agency, user);
     if (
       !canViewRestricted &&
-      (agency.status !== AgencyStatus.ACTIVE || agency.verificationStatus !== AgencyVerificationStatus.VERIFIED)
+      (agency.status !== AgencyStatus.ACTIVE ||
+        agency.verificationStatus !== AgencyVerificationStatus.VERIFIED)
     ) {
       throw new InternalServerErrorException(Message.AGENCY_NOT_FOUND);
     }
@@ -186,7 +246,9 @@ export class AgencyService {
   }
 
   async findByOwner(userId: string): Promise<AgencyDocument | null> {
-    const agency = await this.agencyModel.findOne({ owner: new Types.ObjectId(userId) }).exec();
+    const agency = await this.agencyModel
+      .findOne({ owner: new Types.ObjectId(userId) })
+      .exec();
     return this.normalizeAgency(agency);
   }
 
@@ -200,29 +262,45 @@ export class AgencyService {
     const ownerId = agency.owner?.toString?.();
     if (ownerId === userId) return true;
 
-    return (agency.admins ?? []).some((adminId: any) => adminId?.toString?.() === userId);
+    return (agency.admins ?? []).some(
+      (adminId: any) => adminId?.toString?.() === userId,
+    );
   }
 
-  async assertAgencyAdmin(agencyId: string, user: any): Promise<AgencyDocument> {
+  async assertAgencyAdmin(
+    agencyId: string,
+    user: any,
+  ): Promise<AgencyDocument> {
     const agency = await this.findById(agencyId);
     if (!agency) throw new BadRequestException(Message.AGENCY_NOT_FOUND);
-    if (!this.isAgencyAdmin(agency, user)) throw new ForbiddenException(Message.NOT_ALLOWED_REQUEST);
+    if (!this.isAgencyAdmin(agency, user))
+      throw new ForbiddenException(Message.NOT_ALLOWED_REQUEST);
     return agency;
   }
 
-  async create(input: CreateAgencyInput, userId: string): Promise<AgencyDocument> {
+  async create(
+    input: CreateAgencyInput,
+    userId: string,
+  ): Promise<AgencyDocument> {
     const existing = await this.findByOwner(userId);
     if (existing) throw new BadRequestException(Message.ALREADY_EXISTS);
 
     try {
       const primaryName = input.name.en || input.name.uz;
-      const slug = primaryName
+      const slugFromName = primaryName
         .trim()
         .toLowerCase()
         .replace(/\s+/g, '-')
         .replace(/[^a-z0-9-]/g, '');
 
+      // Lotin harf topilmasa (masalan faqat kirillcha uz nomi berilsa) slugFromName
+      // bo'sh chiqadi — shu holda _id'ga bog'liq fallback slug ishlatiladi, aks holda
+      // unique+sparse index'ga ikkinchi bo'sh slug urinishi E11000 bilan bloklanadi.
+      const _id = new Types.ObjectId();
+      const slug = slugFromName || `agency-${_id.toString().slice(-8)}`;
+
       const agency = await this.agencyModel.create({
+        _id,
         ...input,
         slug,
         owner: new Types.ObjectId(userId),
@@ -242,26 +320,88 @@ export class AgencyService {
   }
 
   async update(id: string, input: UpdateAgencyInput): Promise<AgencyDocument> {
-    const result = await this.agencyModel.findByIdAndUpdate(id, input, { new: true }).exec();
+    const result = await this.agencyModel
+      .findByIdAndUpdate(id, input, { new: true })
+      .exec();
     if (!result) throw new InternalServerErrorException(Message.UPDATE_FAILED);
     return result;
   }
 
-  async updateByOwner(userId: string, input: UpdateAgencyInput): Promise<AgencyDocument> {
-    const agency = await this.agencyModel.findOne({ owner: new Types.ObjectId(userId) }).exec();
+  async updateByOwner(
+    userId: string,
+    input: UpdateAgencyInput,
+  ): Promise<AgencyDocument> {
+    const agency = await this.agencyModel
+      .findOne({ owner: new Types.ObjectId(userId) })
+      .exec();
     if (!agency) throw new BadRequestException(Message.AGENCY_NOT_FOUND);
-    const result = await this.agencyModel.findByIdAndUpdate(agency._id, input, { new: true }).exec();
+    const result = await this.agencyModel
+      .findByIdAndUpdate(agency._id, input, { new: true })
+      .exec();
     if (!result) throw new InternalServerErrorException(Message.UPDATE_FAILED);
     return result;
   }
 
+  // Agencyga tegishli barcha Service/Photo/Follow/Like/View/Review/AgencySubscription
+  // yozuvlarini tozalab, so'ng Agency'ni o'chiradi. Mongo standalone (replica set emas)
+  // bo'lgani uchun tranzaksiyasiz, ketma-ket bajariladi.
   async delete(id: string): Promise<AgencyDocument> {
-    const result = await this.agencyModel.findByIdAndDelete(id).exec();
-    if (!result) throw new InternalServerErrorException(Message.REMOVE_FAILED);
-    return result;
+    const agency = await this.agencyModel.findById(id).exec();
+    if (!agency) throw new InternalServerErrorException(Message.REMOVE_FAILED);
+
+    const services = await this.serviceModel
+      .find({ agency: agency._id })
+      .select('_id')
+      .exec();
+    for (const service of services) {
+      await this.serviceService.delete(service._id.toString());
+    }
+
+    const photos = await this.photoModel
+      .find({ agency: agency._id })
+      .select('_id')
+      .exec();
+    const photoIds = photos.map((photo) => photo._id);
+    if (photoIds.length) {
+      await this.photoCommentModel
+        .deleteMany({ photo: { $in: photoIds } })
+        .exec();
+      await this.likeModel
+        .deleteMany({
+          targetId: { $in: photoIds },
+          targetType: LikeTargetType.PHOTO,
+        })
+        .exec();
+      await this.viewModel
+        .deleteMany({
+          targetId: { $in: photoIds },
+          targetType: ViewTargetType.PHOTO,
+        })
+        .exec();
+      await this.photoModel.deleteMany({ agency: agency._id }).exec();
+    }
+
+    await this.followModel.deleteMany({ agency: agency._id }).exec();
+    await this.likeModel
+      .deleteMany({ targetId: agency._id, targetType: LikeTargetType.AGENCY })
+      .exec();
+    await this.viewModel
+      .deleteMany({ targetId: agency._id, targetType: ViewTargetType.AGENCY })
+      .exec();
+    await this.agencySubscriptionModel
+      .deleteMany({ agency: agency._id })
+      .exec();
+    // Xizmatsiz (agency darajasidagi) sharhlar uchun yakuniy tozalash — xizmatga bog'liqlari
+    // yuqorida har bir Service.delete() ichida allaqachon o'chirilgan.
+    await this.reviewModel.deleteMany({ agency: agency._id }).exec();
+
+    await agency.deleteOne();
+    return agency;
   }
 
-  async getAgenciesForMap(filter: AgenciesForMapInput): Promise<AgencyDocument[]> {
+  async getAgenciesForMap(
+    filter: AgenciesForMapInput,
+  ): Promise<AgencyDocument[]> {
     const match: T = {
       latitude: { $exists: true, $ne: null },
       longitude: { $exists: true, $ne: null },
@@ -269,7 +409,8 @@ export class AgencyService {
       verificationStatus: AgencyVerificationStatus.VERIFIED,
     };
 
-    if (filter.country) match.country = { $regex: filter.country, $options: 'i' };
+    if (filter.country)
+      match.country = { $regex: filter.country, $options: 'i' };
     if (filter.city) match.city = { $regex: filter.city, $options: 'i' };
     if (filter.text) {
       match.$or = [
@@ -284,21 +425,35 @@ export class AgencyService {
 
     const agencies = await this.agencyModel
       .find(match)
-      .select('_id name slug logo address city country latitude longitude phoneNumber email averageRating totalReviews totalServices verificationStatus')
+      .select(
+        '_id name slug logo address city country latitude longitude phoneNumber email averageRating totalReviews totalServices verificationStatus',
+      )
       .lean()
       .exec();
 
-    return agencies.map((agency) => this.normalizeAgency(agency)) as unknown as AgencyDocument[];
+    return agencies.map((agency) => this.normalizeAgency(agency));
   }
 
-  async agencyStatsEditor(input: StatisticModifier): Promise<AgencyDocument | null> {
+  async agencyStatsEditor(
+    input: StatisticModifier,
+  ): Promise<AgencyDocument | null> {
     const { _id, targetKey, modifier } = input;
     return this.agencyModel
-      .findByIdAndUpdate(_id, { $inc: { [targetKey]: modifier } }, { new: true })
+      .findByIdAndUpdate(
+        _id,
+        { $inc: { [targetKey]: modifier } },
+        { new: true },
+      )
       .exec();
   }
 
-  async updateReviewStats(id: string, averageRating: number, totalReviews: number): Promise<void> {
-    await this.agencyModel.findByIdAndUpdate(id, { averageRating, totalReviews }).exec();
+  async updateReviewStats(
+    id: string,
+    averageRating: number,
+    totalReviews: number,
+  ): Promise<void> {
+    await this.agencyModel
+      .findByIdAndUpdate(id, { averageRating, totalReviews })
+      .exec();
   }
 }

@@ -13,7 +13,8 @@ export class ViewResolver {
   @Mutation(() => Int, { name: 'recordView' })
   async recordView(
     @Args('targetId') targetId: string,
-    @Args('targetType', { type: () => ViewTargetType }) targetType: ViewTargetType,
+    @Args('targetType', { type: () => ViewTargetType })
+    targetType: ViewTargetType,
     @CurrentUser() user: any,
   ): Promise<number> {
     console.log('Mutation: recordView');
@@ -25,7 +26,8 @@ export class ViewResolver {
   @Query(() => Int, { name: 'getViewCount' })
   async getViewCount(
     @Args('targetId') targetId: string,
-    @Args('targetType', { type: () => ViewTargetType }) targetType: ViewTargetType,
+    @Args('targetType', { type: () => ViewTargetType })
+    targetType: ViewTargetType,
   ): Promise<number> {
     console.log('Query: getViewCount');
     return this.viewService.getViewCount(targetId, targetType);

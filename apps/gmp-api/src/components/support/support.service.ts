@@ -1,7 +1,14 @@
-import { BadRequestException, Injectable, InternalServerErrorException } from '@nestjs/common';
+import {
+  BadRequestException,
+  Injectable,
+  InternalServerErrorException,
+} from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model, Types } from 'mongoose';
-import { SupportTicket, SupportTicketDocument } from '../../schemas/SupportTicket.model';
+import {
+  SupportTicket,
+  SupportTicketDocument,
+} from '../../schemas/SupportTicket.model';
 import {
   CreateSupportTicketInput,
   SupportTicketsInquiryInput,
@@ -13,10 +20,14 @@ import { Message, SupportTicketStatus } from '../../libs/enums';
 @Injectable()
 export class SupportService {
   constructor(
-    @InjectModel(SupportTicket.name) private readonly supportTicketModel: Model<SupportTicketDocument>,
+    @InjectModel(SupportTicket.name)
+    private readonly supportTicketModel: Model<SupportTicketDocument>,
   ) {}
 
-  async create(input: CreateSupportTicketInput, user?: any): Promise<SupportTicketDocument> {
+  async create(
+    input: CreateSupportTicketInput,
+    user?: any,
+  ): Promise<SupportTicketDocument> {
     try {
       return await this.supportTicketModel.create({
         ...input,
@@ -30,7 +41,9 @@ export class SupportService {
     }
   }
 
-  async getTickets(input: SupportTicketsInquiryInput): Promise<SupportTicketsResult> {
+  async getTickets(
+    input: SupportTicketsInquiryInput,
+  ): Promise<SupportTicketsResult> {
     const { status, text, page, limit } = input;
     const match: Record<string, any> = {};
 
@@ -44,27 +57,38 @@ export class SupportService {
     }
 
     const skip = (page - 1) * limit;
-    const result = await this.supportTicketModel.aggregate<SupportTicketsResult>([
-      { $match: match },
-      { $sort: { createdAt: -1 } },
-      {
-        $facet: {
-          list: [{ $skip: skip }, { $limit: limit }],
-          metaCounter: [{ $count: 'total' }],
+    const result =
+      await this.supportTicketModel.aggregate<SupportTicketsResult>([
+        { $match: match },
+        { $sort: { createdAt: -1 } },
+        {
+          $facet: {
+            list: [{ $skip: skip }, { $limit: limit }],
+            metaCounter: [{ $count: 'total' }],
+          },
         },
-      },
-    ]);
+      ]);
 
     return result[0] ?? { list: [], metaCounter: [] };
   }
 
-  async updateStatus(input: UpdateSupportTicketStatusInput): Promise<SupportTicketDocument> {
-    if (!Object.values(SupportTicketStatus).includes(input.status as SupportTicketStatus)) {
+  async updateStatus(
+    input: UpdateSupportTicketStatusInput,
+  ): Promise<SupportTicketDocument> {
+    if (
+      !Object.values(SupportTicketStatus).includes(
+        input.status as SupportTicketStatus,
+      )
+    ) {
       throw new BadRequestException(Message.BAD_REQUEST);
     }
 
     const ticket = await this.supportTicketModel
-      .findByIdAndUpdate(input.ticketId, { status: input.status }, { new: true })
+      .findByIdAndUpdate(
+        input.ticketId,
+        { status: input.status },
+        { new: true },
+      )
       .exec();
     if (!ticket) throw new InternalServerErrorException(Message.NO_DATA_FOUND);
     return ticket;

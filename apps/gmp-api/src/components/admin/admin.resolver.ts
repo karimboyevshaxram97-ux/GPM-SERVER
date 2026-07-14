@@ -75,7 +75,8 @@ export class AdminResolver {
 
   @Query(() => [ReviewType], { name: 'adminReviews' })
   async adminReviews(
-    @Args('status', { type: () => ReviewStatus, nullable: true }) status?: ReviewStatus,
+    @Args('status', { type: () => ReviewStatus, nullable: true })
+    status?: ReviewStatus,
   ): Promise<ReviewType[]> {
     return this.adminService.getReviews(status) as any;
   }
@@ -93,7 +94,11 @@ export class AdminResolver {
     @CurrentUser() admin: any,
     @Args('input') input: RejectAgencyInput,
   ): Promise<AgencyType> {
-    return this.adminService.rejectAgency(admin._id, input.agencyId, input.reason) as any;
+    return this.adminService.rejectAgency(
+      admin._id,
+      input.agencyId,
+      input.reason,
+    ) as any;
   }
 
   @Mutation(() => AgencyType, { name: 'suspendAgency' })
@@ -104,7 +109,6 @@ export class AdminResolver {
     return this.adminService.suspendAgency(admin._id, input.agencyId) as any;
   }
 
-  
   @Mutation(() => AgencyType, { name: 'activateAgency' })
   async activateAgency(
     @CurrentUser() admin: any,
@@ -112,7 +116,6 @@ export class AdminResolver {
   ): Promise<AgencyType> {
     return this.adminService.activateAgency(admin._id, agencyId) as any;
   }
-
 
   @Mutation(() => AgencyType, { name: 'adminDeleteAgency' })
   async adminDeleteAgency(
@@ -122,7 +125,6 @@ export class AdminResolver {
     return this.adminService.deleteAgency(admin._id, agencyId) as any;
   }
 
-
   @Mutation(() => UserType, { name: 'banUser' })
   async banUser(
     @CurrentUser() admin: any,
@@ -130,7 +132,6 @@ export class AdminResolver {
   ): Promise<UserType> {
     return this.adminService.banUser(admin._id, input.userId) as any;
   }
-
 
   @Mutation(() => UserType, { name: 'unbanUser' })
   async unbanUser(
@@ -140,7 +141,6 @@ export class AdminResolver {
     return this.adminService.unbanUser(admin._id, userId) as any;
   }
 
-
   @Mutation(() => UserType, { name: 'adminDeleteUser' })
   async adminDeleteUser(
     @CurrentUser() admin: any,
@@ -148,7 +148,6 @@ export class AdminResolver {
   ): Promise<UserType> {
     return this.adminService.deleteUser(admin._id, userId) as any;
   }
- 
 
   //====================
   @Mutation(() => ReviewType, { name: 'approveReview' })
@@ -156,9 +155,12 @@ export class AdminResolver {
     @CurrentUser() admin: any,
     @Args('reviewId') reviewId: string,
   ): Promise<ReviewType> {
-    return this.adminService.updateReviewStatus(admin._id, reviewId, ReviewStatus.APPROVED) as any;
+    return this.adminService.updateReviewStatus(
+      admin._id,
+      reviewId,
+      ReviewStatus.APPROVED,
+    ) as any;
   }
-
 
   //  ===================================================-
   @Mutation(() => ReviewType, { name: 'rejectReview' })
@@ -167,9 +169,13 @@ export class AdminResolver {
     @Args('reviewId') reviewId: string,
     @Args('reason', { nullable: true }) reason?: string,
   ): Promise<ReviewType> {
-    return this.adminService.updateReviewStatus(admin._id, reviewId, ReviewStatus.REJECTED, reason) as any;
+    return this.adminService.updateReviewStatus(
+      admin._id,
+      reviewId,
+      ReviewStatus.REJECTED,
+      reason,
+    ) as any;
   }
-
 
   @Mutation(() => ReviewType, { name: 'hideReview' })
   async hideReview(
@@ -177,6 +183,11 @@ export class AdminResolver {
     @Args('reviewId') reviewId: string,
     @Args('reason', { nullable: true }) reason?: string,
   ): Promise<ReviewType> {
-    return this.adminService.updateReviewStatus(admin._id, reviewId, ReviewStatus.HIDDEN, reason) as any;
+    return this.adminService.updateReviewStatus(
+      admin._id,
+      reviewId,
+      ReviewStatus.HIDDEN,
+      reason,
+    ) as any;
   }
 }

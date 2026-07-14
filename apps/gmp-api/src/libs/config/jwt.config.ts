@@ -1,6 +1,10 @@
 import { registerAs } from '@nestjs/config';
 
-const getRequiredSecret = (value: string | undefined, name: string, fallback: string): string => {
+const getRequiredSecret = (
+  value: string | undefined,
+  name: string,
+  fallback: string,
+): string => {
   if (value) return value;
   if (process.env.NODE_ENV === 'production') {
     throw new Error(`${name} must be set in production`);
@@ -20,5 +24,8 @@ export default registerAs('jwt', () => ({
     'JWT_REFRESH_SECRET or SECRET_TOKEN',
     'super-secret-refresh-key-change-in-production',
   ),
-  refreshExpiresIn: parseInt(process.env.JWT_REFRESH_EXPIRATION || '604800', 10),
+  refreshExpiresIn: parseInt(
+    process.env.JWT_REFRESH_EXPIRATION || '604800',
+    10,
+  ),
 }));

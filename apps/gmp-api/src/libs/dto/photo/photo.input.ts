@@ -1,5 +1,17 @@
 import { InputType, Field, Int } from '@nestjs/graphql';
-import { IsEnum, IsInt, IsMongoId, IsOptional, IsString, Max, MaxLength, Min, MinLength } from 'class-validator';
+import {
+  ArrayMaxSize,
+  IsArray,
+  IsEnum,
+  IsInt,
+  IsMongoId,
+  IsOptional,
+  IsString,
+  Max,
+  MaxLength,
+  Min,
+  MinLength,
+} from 'class-validator';
 import { ServiceType } from '../../enums';
 
 @InputType()
@@ -44,9 +56,19 @@ export class CreatePhotoCommentInput {
   @IsMongoId()
   photoId: string;
 
-  @Field()
+  @Field({ nullable: true })
+  @IsOptional()
   @IsString()
-  @MinLength(1)
   @MaxLength(500)
-  text: string;
+  text?: string;
+
+  // Oldindan /upload/image yoki /upload/video orqali yuklangan fayllarning URL'lari
+  // (photo.service.ts'da: kamida text yoki attachmentUrls'dan biri bo'lishi, 4 tagacha
+  // rasm YOKI 1 ta video — aralash emas, deb tekshiriladi).
+  @Field(() => [String], { nullable: true })
+  @IsOptional()
+  @IsArray()
+  @ArrayMaxSize(4)
+  @IsString({ each: true })
+  attachmentUrls?: string[];
 }

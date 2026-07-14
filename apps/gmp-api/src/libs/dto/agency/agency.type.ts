@@ -1,5 +1,9 @@
 import { ObjectType, Field, ID, Float } from '@nestjs/graphql';
-import { AgencyStatus, AgencyVerificationStatus, SubscriptionStatus } from '../../enums';
+import {
+  AgencyStatus,
+  AgencyVerificationStatus,
+  SubscriptionStatus,
+} from '../../enums';
 import { MeLiked } from '../like/like.type';
 import { MeFollowed } from '../follow/follow.type';
 import { LocalizedStringType } from '../common/localized-string.type';

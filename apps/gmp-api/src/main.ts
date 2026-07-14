@@ -12,11 +12,15 @@ async function bootstrap() {
   app.useWebSocketAdapter(new WsAdapter(app));
 
   // /uploads/filename.webp → uploads/ papkasidan serve qilish
-  app.useStaticAssets(path.join(process.cwd(), 'uploads'), { prefix: '/uploads' });
+  app.useStaticAssets(path.join(process.cwd(), 'uploads'), {
+    prefix: '/uploads',
+  });
 
   // Enable CORS
   const allowedOrigins = process.env.ALLOWED_ORIGINS
-    ? process.env.ALLOWED_ORIGINS.split(',').map((origin) => origin.trim()).filter(Boolean)
+    ? process.env.ALLOWED_ORIGINS.split(',')
+        .map((origin) => origin.trim())
+        .filter(Boolean)
     : ['http://localhost:3000', 'http://localhost:3001'];
 
   app.enableCors({

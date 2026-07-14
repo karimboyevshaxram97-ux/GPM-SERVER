@@ -29,5 +29,19 @@ export class Review {
 }
 
 export const ReviewSchema = SchemaFactory.createForClass(Review);
-ReviewSchema.index({ agency: 1, user: 1, service: 1 }, { unique: true });
+
+// Sharh REJECTED/HIDDEN qilinsa, foydalanuvchi qayta sharh qoldira olishi kerak —
+// unique cheklov faqat hali "amaldagi" (kutilayotgan yoki tasdiqlangan) sharhga tegishli.
+export const BLOCKING_REVIEW_STATUSES = [
+  ReviewStatus.PENDING,
+  ReviewStatus.APPROVED,
+];
+
+ReviewSchema.index(
+  { agency: 1, user: 1, service: 1 },
+  {
+    unique: true,
+    partialFilterExpression: { status: { $in: BLOCKING_REVIEW_STATUSES } },
+  },
+);
 ReviewSchema.index({ agency: 1, user: 1, createdAt: -1 });

@@ -23,11 +23,14 @@ export class OAuthStateService {
     if (parts.length !== 3) return false;
 
     const [nonce, expiresAt, signature] = parts;
-    if (!/^\d+$/.test(expiresAt) || Date.now() > Number(expiresAt)) return false;
+    if (!/^\d+$/.test(expiresAt) || Date.now() > Number(expiresAt))
+      return false;
 
     const expected = Buffer.from(this.sign(`${nonce}.${expiresAt}`));
     const provided = Buffer.from(signature);
-    return provided.length === expected.length && timingSafeEqual(provided, expected);
+    return (
+      provided.length === expected.length && timingSafeEqual(provided, expected)
+    );
   }
 
   private sign(payload: string): string {

@@ -1,14 +1,18 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
-import { SubscriptionPlan, SubscriptionPlanDocument } from '../../schemas/SubscriptionPlan.model';
+import {
+  SubscriptionPlan,
+  SubscriptionPlanDocument,
+} from '../../schemas/SubscriptionPlan.model';
 import { PlanStatus, SupportLevel } from '../../libs/enums';
 
 const PLANS = [
   {
     name: 'Basic',
     slug: 'basic',
-    description: 'Perfect for small agencies just getting started on the platform.',
+    description:
+      'Perfect for small agencies just getting started on the platform.',
     monthlyPrice: 29,
     annualPrice: 290,
     currency: 'USD',
@@ -94,7 +98,9 @@ export class SubscriptionPlansSeeder {
   async seed(): Promise<void> {
     const existing = await this.planModel.countDocuments().exec();
     if (existing > 0) {
-      this.logger.log(`Subscription plans already seeded (${existing} records). Skipping.`);
+      this.logger.log(
+        `Subscription plans already seeded (${existing} records). Skipping.`,
+      );
       return;
     }
 

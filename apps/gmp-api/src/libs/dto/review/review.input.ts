@@ -1,5 +1,12 @@
 import { InputType, Field, Int } from '@nestjs/graphql';
-import { IsMongoId, IsString, IsOptional, IsInt, Min, Max } from 'class-validator';
+import {
+  IsMongoId,
+  IsString,
+  IsOptional,
+  IsInt,
+  Min,
+  Max,
+} from 'class-validator';
 
 @InputType()
 export class CreateReviewInput {

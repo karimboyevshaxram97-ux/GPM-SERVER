@@ -1,28 +1,52 @@
-import { ForbiddenException, Injectable, NotFoundException } from '@nestjs/common';
+import {
+  BadRequestException,
+  ForbiddenException,
+  Injectable,
+  NotFoundException,
+} from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model, Types } from 'mongoose';
 import * as path from 'path';
 import * as fs from 'fs';
 import { Photo, PhotoDocument } from '../../schemas/Photo.model';
-import { PhotoComment, PhotoCommentDocument } from '../../schemas/PhotoComment.model';
+import {
+  PhotoComment,
+  PhotoCommentDocument,
+} from '../../schemas/PhotoComment.model';
 import { Agency, AgencyDocument } from '../../schemas/Agency.model';
 import { Like, LikeDocument } from '../../schemas/Like.model';
-import { CreatePhotoInput, CreatePhotoCommentInput, PhotosInquiryInput } from '../../libs/dto/photo/photo.input';
-import { PhotosInquiryResult, PhotoType, PhotoCommentType } from '../../libs/dto/photo/photo.type';
+import {
+  CreatePhotoInput,
+  CreatePhotoCommentInput,
+  PhotosInquiryInput,
+} from '../../libs/dto/photo/photo.input';
+import {
+  PhotosInquiryResult,
+  PhotoType,
+  PhotoCommentType,
+} from '../../libs/dto/photo/photo.type';
 import { LikeTargetType } from '../../libs/enums';
-import { lookupAuthUserLiked, lookupUserData } from '../../libs/config/aggregation';
+import {
+  lookupAuthUserLiked,
+  lookupUserData,
+} from '../../libs/config/aggregation';
 
 @Injectable()
 export class PhotoService {
   constructor(
     @InjectModel(Photo.name) private readonly photoModel: Model<PhotoDocument>,
-    @InjectModel(PhotoComment.name) private readonly photoCommentModel: Model<PhotoCommentDocument>,
-    @InjectModel(Agency.name) private readonly agencyModel: Model<AgencyDocument>,
+    @InjectModel(PhotoComment.name)
+    private readonly photoCommentModel: Model<PhotoCommentDocument>,
+    @InjectModel(Agency.name)
+    private readonly agencyModel: Model<AgencyDocument>,
     @InjectModel(Like.name) private readonly likeModel: Model<LikeDocument>,
   ) {}
 
   // Eng ko'p like bosilganlar birinchi — board sahifalari shu tartibda ko'rsatadi
-  async getPhotos(input: PhotosInquiryInput, userId?: string): Promise<PhotosInquiryResult> {
+  async getPhotos(
+    input: PhotosInquiryInput,
+    userId?: string,
+  ): Promise<PhotosInquiryResult> {
     const match: Record<string, any> = {};
     if (input.serviceType) match.serviceType = input.serviceType;
     if (input.agencyId) match.agency = new Types.ObjectId(input.agencyId);
@@ -47,7 +71,12 @@ export class PhotoService {
                   as: 'agencyData',
                 },
               },
-              { $unwind: { path: '$agencyData', preserveNullAndEmptyArrays: true } },
+              {
+                $unwind: {
+                  path: '$agencyData',
+                  preserveNullAndEmptyArrays: true,
+                },
+              },
               {
                 $addFields: {
                   agencyName: '$agencyData.name',
@@ -64,11 +93,16 @@ export class PhotoService {
 
     return {
       list: result?.list ?? [],
-      metaCounter: result?.metaCounter?.length ? result.metaCounter : [{ total: 0 }],
+      metaCounter: result?.metaCounter?.length
+        ? result.metaCounter
+        : [{ total: 0 }],
     };
   }
 
-  async createPhoto(input: CreatePhotoInput, userId: string): Promise<PhotoType> {
+  async createPhoto(
+    input: CreatePhotoInput,
+    userId: string,
+  ): Promise<PhotoType> {
     const agency = await this.requireOwnAgency(userId);
 
     const created = await this.photoModel.create({
@@ -110,27 +144,73 @@ export class PhotoService {
     return true;
   }
 
-  async createComment(input: CreatePhotoCommentInput, userId: string): Promise<PhotoCommentType> {
+  async createComment(
+    input: CreatePhotoCommentInput,
+    userId: string,
+  ): Promise<PhotoCommentType> {
     const photo = await this.photoModel.findById(input.photoId).exec();
     if (!photo) throw new NotFoundException('Photo not found');
+
+    const text = input.text?.trim() || undefined;
+    const attachments = this.buildCommentAttachments(
+      input.attachmentUrls ?? [],
+    );
+    if (!text && !attachments.length) {
+      throw new BadRequestException(
+        'Comment must include text or an attachment',
+      );
+    }
+
+    const videoCount = attachments.filter((a) => a.type === 'video').length;
+    if (videoCount > 1 || (videoCount === 1 && attachments.length > 1)) {
+      throw new BadRequestException(
+        'A comment can include up to 4 images or a single video, not both',
+      );
+    }
 
     const created = await this.photoCommentModel.create({
       photo: photo._id,
       user: new Types.ObjectId(userId),
-      text: input.text,
+      text,
+      attachments,
     });
 
-    await this.photoModel.findByIdAndUpdate(photo._id, { $inc: { commentCount: 1 } }).exec();
+    await this.photoModel
+      .findByIdAndUpdate(photo._id, { $inc: { commentCount: 1 } })
+      .exec();
 
     const [comment] = await this.commentsPipeline({ _id: created._id });
     return comment;
+  }
+
+  private static readonly VIDEO_EXTENSIONS = ['.mp4', '.webm', '.mov'];
+
+  // Yuklash endpoint'i qaytargan URL'lardan (allaqachon /uploads/... bilan
+  // prefikslangan) attachment obyektlarini quradi; kengaytmaga qarab image/video
+  // turini aniqlaydi. O'zboshimcha (bizning /uploads/ ostimizda bo'lmagan) URL'larni rad etadi.
+  private buildCommentAttachments(
+    urls: string[],
+  ): { url: string; type: string; name: string }[] {
+    return urls.map((url) => {
+      if (!url.startsWith('/uploads/')) {
+        throw new BadRequestException('Invalid attachment URL');
+      }
+      const name = url.split('/').pop() || 'file';
+      const ext = path.extname(name).toLowerCase();
+      const type = PhotoService.VIDEO_EXTENSIONS.includes(ext)
+        ? 'video'
+        : 'image';
+      return { url, type, name };
+    });
   }
 
   async getComments(photoId: string): Promise<PhotoCommentType[]> {
     return this.commentsPipeline({ photo: new Types.ObjectId(photoId) });
   }
 
-  private async commentsPipeline(match: Record<string, any>): Promise<PhotoCommentType[]> {
+  private async commentsPipeline(
+    match: Record<string, any>,
+  ): Promise<PhotoCommentType[]> {
     return this.photoCommentModel
       .aggregate([
         { $match: match },
@@ -156,12 +236,15 @@ export class PhotoService {
         },
         { $project: { userData: 0 } },
       ])
-      .exec() as unknown as Promise<PhotoCommentType[]>;
+      .exec();
   }
 
   private async requireOwnAgency(userId: string): Promise<AgencyDocument> {
-    const agency = await this.agencyModel.findOne({ owner: new Types.ObjectId(userId) }).exec();
-    if (!agency) throw new ForbiddenException('Only agency owners can manage photos');
+    const agency = await this.agencyModel
+      .findOne({ owner: new Types.ObjectId(userId) })
+      .exec();
+    if (!agency)
+      throw new ForbiddenException('Only agency owners can manage photos');
     return agency;
   }
 }

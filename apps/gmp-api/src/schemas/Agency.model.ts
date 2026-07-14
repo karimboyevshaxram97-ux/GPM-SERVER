@@ -1,7 +1,14 @@
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
 import { HydratedDocument, Types } from 'mongoose';
-import { AgencyStatus, AgencyVerificationStatus, SubscriptionStatus } from '../libs/enums';
-import { LocalizedString, LocalizedStringSchema } from '../libs/types/localized-string.schema';
+import {
+  AgencyStatus,
+  AgencyVerificationStatus,
+  SubscriptionStatus,
+} from '../libs/enums';
+import {
+  LocalizedString,
+  LocalizedStringSchema,
+} from '../libs/types/localized-string.schema';
 
 export type AgencyDocument = HydratedDocument<Agency>;
 
@@ -61,7 +68,10 @@ export class Agency {
   @Prop({ enum: AgencyStatus, default: AgencyStatus.ACTIVE })
   status: AgencyStatus;
 
-  @Prop({ enum: AgencyVerificationStatus, default: AgencyVerificationStatus.PENDING })
+  @Prop({
+    enum: AgencyVerificationStatus,
+    default: AgencyVerificationStatus.PENDING,
+  })
   verificationStatus: AgencyVerificationStatus;
 
   @Prop()

@@ -40,13 +40,21 @@ export class AgencySubscription {
   autoRenew: boolean;
 
   @Prop({
-    type: [{ amount: Number, status: String, paidAt: Date, receiptUrl: String }],
+    type: [
+      { amount: Number, status: String, paidAt: Date, receiptUrl: String },
+    ],
     default: [],
   })
-  paymentHistory: { amount: number; status: PaymentStatus; paidAt: Date; receiptUrl?: string }[];
+  paymentHistory: {
+    amount: number;
+    status: PaymentStatus;
+    paidAt: Date;
+    receiptUrl?: string;
+  }[];
 }
 
-export const AgencySubscriptionSchema = SchemaFactory.createForClass(AgencySubscription);
+export const AgencySubscriptionSchema =
+  SchemaFactory.createForClass(AgencySubscription);
 
 AgencySubscriptionSchema.index({ agency: 1, status: 1 });
 AgencySubscriptionSchema.index({ status: 1, renewalDate: 1 });

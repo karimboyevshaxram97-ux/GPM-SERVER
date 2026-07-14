@@ -1,4 +1,8 @@
-import { Injectable, ConflictException, NotFoundException } from '@nestjs/common';
+import {
+  Injectable,
+  ConflictException,
+  NotFoundException,
+} from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model, Types } from 'mongoose';
 import { Follow, FollowDocument } from '../../schemas/Follow.model';
@@ -9,14 +13,18 @@ import { NotificationType } from '../../libs/enums';
 @Injectable()
 export class FollowService {
   constructor(
-    @InjectModel(Follow.name) private readonly followModel: Model<FollowDocument>,
+    @InjectModel(Follow.name)
+    private readonly followModel: Model<FollowDocument>,
     private readonly agencyService: AgencyService,
     private readonly notificationService: NotificationService,
   ) {}
 
   async follow(userId: string, agencyId: string): Promise<FollowDocument> {
     const existing = await this.followModel
-      .findOne({ user: new Types.ObjectId(userId), agency: new Types.ObjectId(agencyId) })
+      .findOne({
+        user: new Types.ObjectId(userId),
+        agency: new Types.ObjectId(agencyId),
+      })
       .exec();
 
     if (existing) throw new ConflictException('Already following this agency');
@@ -44,15 +52,24 @@ export class FollowService {
 
   async unfollow(userId: string, agencyId: string): Promise<boolean> {
     const result = await this.followModel
-      .findOneAndDelete({ user: new Types.ObjectId(userId), agency: new Types.ObjectId(agencyId) })
+      .findOneAndDelete({
+        user: new Types.ObjectId(userId),
+        agency: new Types.ObjectId(agencyId),
+      })
       .exec();
     if (!result) throw new NotFoundException('Follow record not found');
     return true;
   }
 
-  async toggleNotifications(userId: string, agencyId: string): Promise<FollowDocument> {
+  async toggleNotifications(
+    userId: string,
+    agencyId: string,
+  ): Promise<FollowDocument> {
     const follow = await this.followModel
-      .findOne({ user: new Types.ObjectId(userId), agency: new Types.ObjectId(agencyId) })
+      .findOne({
+        user: new Types.ObjectId(userId),
+        agency: new Types.ObjectId(agencyId),
+      })
       .exec();
 
     if (!follow) throw new NotFoundException('Follow record not found');
@@ -65,7 +82,10 @@ export class FollowService {
     agencyId: string,
   ): Promise<{ isFollowing: boolean; notificationsEnabled: boolean }> {
     const follow = await this.followModel
-      .findOne({ user: new Types.ObjectId(userId), agency: new Types.ObjectId(agencyId) })
+      .findOne({
+        user: new Types.ObjectId(userId),
+        agency: new Types.ObjectId(agencyId),
+      })
       .exec();
     return {
       isFollowing: !!follow,
@@ -74,14 +94,22 @@ export class FollowService {
   }
 
   async getFollowingAgencies(userId: string): Promise<FollowDocument[]> {
-    return this.followModel.find({ user: new Types.ObjectId(userId) }).sort({ followedAt: -1 }).exec();
+    return this.followModel
+      .find({ user: new Types.ObjectId(userId) })
+      .sort({ followedAt: -1 })
+      .exec();
   }
 
   async getAgencyFollowers(agencyId: string): Promise<FollowDocument[]> {
-    return this.followModel.find({ agency: new Types.ObjectId(agencyId) }).sort({ followedAt: -1 }).exec();
+    return this.followModel
+      .find({ agency: new Types.ObjectId(agencyId) })
+      .sort({ followedAt: -1 })
+      .exec();
   }
 
   async getFollowerCount(agencyId: string): Promise<number> {
-    return this.followModel.countDocuments({ agency: new Types.ObjectId(agencyId) }).exec();
+    return this.followModel
+      .countDocuments({ agency: new Types.ObjectId(agencyId) })
+      .exec();
   }
 }

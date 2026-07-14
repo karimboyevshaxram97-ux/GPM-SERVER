@@ -1,7 +1,10 @@
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
 import { HydratedDocument, Types } from 'mongoose';
 import { ServiceStatus, ServiceType, ServiceVisibility } from '../libs/enums';
-import { LocalizedString, LocalizedStringSchema } from '../libs/types/localized-string.schema';
+import {
+  LocalizedString,
+  LocalizedStringSchema,
+} from '../libs/types/localized-string.schema';
 
 export type ServiceDocument = HydratedDocument<Service>;
 
@@ -81,8 +84,14 @@ export const ServiceSchema = SchemaFactory.createForClass(Service);
 
 // Indexes
 ServiceSchema.index({
-  'name.uz': 'text', 'name.ru': 'text', 'name.en': 'text', 'name.ko': 'text',
-  'description.uz': 'text', 'description.ru': 'text', 'description.en': 'text', 'description.ko': 'text',
+  'name.uz': 'text',
+  'name.ru': 'text',
+  'name.en': 'text',
+  'name.ko': 'text',
+  'description.uz': 'text',
+  'description.ru': 'text',
+  'description.en': 'text',
+  'description.ko': 'text',
   keywords: 'text',
 });
 ServiceSchema.index({
@@ -92,7 +101,11 @@ ServiceSchema.index({
   status: 1,
 });
 ServiceSchema.index({ agency: 1, status: 1 });
-ServiceSchema.index({ destinationCountry: 1, averageRating: -1, totalReviews: -1 });
+ServiceSchema.index({
+  destinationCountry: 1,
+  averageRating: -1,
+  totalReviews: -1,
+});
 ServiceSchema.index({ sourceCountries: 1 });
 ServiceSchema.index({ createdAt: -1 });
 ServiceSchema.index({ tags: 1 });

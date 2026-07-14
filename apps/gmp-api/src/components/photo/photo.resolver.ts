@@ -1,7 +1,15 @@
 import { Resolver, Query, Mutation, Args } from '@nestjs/graphql';
 import { PhotoService } from './photo.service';
-import { PhotoType, PhotosInquiryResult, PhotoCommentType } from '../../libs/dto/photo/photo.type';
-import { CreatePhotoInput, CreatePhotoCommentInput, PhotosInquiryInput } from '../../libs/dto/photo/photo.input';
+import {
+  PhotoType,
+  PhotosInquiryResult,
+  PhotoCommentType,
+} from '../../libs/dto/photo/photo.type';
+import {
+  CreatePhotoInput,
+  CreatePhotoCommentInput,
+  PhotosInquiryInput,
+} from '../../libs/dto/photo/photo.input';
 import { CurrentUser } from '../auth/decorators/current-user.decorator';
 import { Public } from '../auth/decorators/public.decorator';
 import { WithoutAuth } from '../auth/guards/without.guard';
@@ -22,7 +30,9 @@ export class PhotoResolver {
 
   @Public()
   @Query(() => [PhotoCommentType], { name: 'getPhotoComments' })
-  async getPhotoComments(@Args('photoId') photoId: string): Promise<PhotoCommentType[]> {
+  async getPhotoComments(
+    @Args('photoId') photoId: string,
+  ): Promise<PhotoCommentType[]> {
     console.log('Query: getPhotoComments');
     return this.photoService.getComments(photoId);
   }

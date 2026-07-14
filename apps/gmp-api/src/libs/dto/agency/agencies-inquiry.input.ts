@@ -1,6 +1,12 @@
 import { InputType, Field, Int } from '@nestjs/graphql';
 import { IsEnum, IsInt, IsOptional, IsString, Max, Min } from 'class-validator';
-import { AgencyStatus, AgencyVerificationStatus, AgencyInquirySort, Direction, ServiceType } from '../../enums';
+import {
+  AgencyStatus,
+  AgencyVerificationStatus,
+  AgencyInquirySort,
+  Direction,
+  ServiceType,
+} from '../../enums';
 
 @InputType()
 export class AgenciesInquiryInput {
@@ -29,7 +35,9 @@ export class AgenciesInquiryInput {
   @IsEnum(ServiceType)
   serviceType?: ServiceType;
 
-  @Field(() => AgencyInquirySort, { defaultValue: AgencyInquirySort.CREATED_AT })
+  @Field(() => AgencyInquirySort, {
+    defaultValue: AgencyInquirySort.CREATED_AT,
+  })
   @IsEnum(AgencyInquirySort)
   sort: AgencyInquirySort = AgencyInquirySort.CREATED_AT;
 

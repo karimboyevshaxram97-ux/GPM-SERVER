@@ -26,9 +26,15 @@ export class WithoutGuard implements CanActivate {
       if (token) {
         const secret = this.configService.get<string>('jwt.secret');
         if (!secret) return true;
-        const payload = this.jwtService.verify<{ sub: string }>(token, { secret });
+        const payload = this.jwtService.verify<{ sub: string }>(token, {
+          secret,
+        });
         const user = await this.userService.findById(payload.sub);
-        const userObject = user ? (user.toObject ? user.toObject() : user) : null;
+        const userObject = user
+          ? user.toObject
+            ? user.toObject()
+            : user
+          : null;
         req.user = userObject?.status === UserStatus.ACTIVE ? userObject : null;
       }
     } catch {}

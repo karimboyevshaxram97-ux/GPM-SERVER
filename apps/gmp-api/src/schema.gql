@@ -157,6 +157,28 @@ type AgenciesInquiryResult {
   metaCounter: [AgencyInquiryMeta!]!
 }
 
+type AgencyStatType {
+  _id: ID!
+  agency: String!
+  date: DateTime!
+  profileViews: Int!
+  applicationCount: Int!
+  averageRating: Float!
+  reviewCount: Int!
+  followerCount: Int!
+  activeServices: Int!
+}
+
+type ServiceStatType {
+  _id: ID!
+  service: String!
+  date: DateTime!
+  views: Int!
+  applicationCount: Int!
+  rating: Float!
+  reviewCount: Int!
+}
+
 type ServiceGraphType {
   _id: ID!
   name: LocalizedStringType!
@@ -211,6 +233,35 @@ type ServicesInquiryResult {
   metaCounter: [ServiceInquiryMeta!]!
 }
 
+type NotificationGqlType {
+  _id: ID!
+  recipient: String!
+  sender: String
+  type: NotificationType!
+  message: String!
+  targetId: String
+  targetType: String
+  isRead: Boolean!
+  createdAt: DateTime!
+}
+
+enum NotificationType {
+  FOLLOW
+  NEW_SERVICE
+  APPLICATION_RECEIVED
+  APPLICATION_STATUS_CHANGED
+  NEW_REVIEW
+}
+
+type NotificationInquiryMeta {
+  total: Int!
+}
+
+type NotificationsInquiryResult {
+  list: [NotificationGqlType!]!
+  metaCounter: [NotificationInquiryMeta!]!
+}
+
 type ApplicationType {
   _id: ID!
   user: String!
@@ -250,35 +301,6 @@ enum ApplicationPriority {
   LOW
   MEDIUM
   HIGH
-}
-
-type NotificationGqlType {
-  _id: ID!
-  recipient: String!
-  sender: String
-  type: NotificationType!
-  message: String!
-  targetId: String
-  targetType: String
-  isRead: Boolean!
-  createdAt: DateTime!
-}
-
-enum NotificationType {
-  FOLLOW
-  NEW_SERVICE
-  APPLICATION_RECEIVED
-  APPLICATION_STATUS_CHANGED
-  NEW_REVIEW
-}
-
-type NotificationInquiryMeta {
-  total: Int!
-}
-
-type NotificationsInquiryResult {
-  list: [NotificationGqlType!]!
-  metaCounter: [NotificationInquiryMeta!]!
 }
 
 type ReviewType {
@@ -415,28 +437,6 @@ enum BillingCycle {
   ANNUAL
 }
 
-type AgencyStatType {
-  _id: ID!
-  agency: String!
-  date: DateTime!
-  profileViews: Int!
-  applicationCount: Int!
-  averageRating: Float!
-  reviewCount: Int!
-  followerCount: Int!
-  activeServices: Int!
-}
-
-type ServiceStatType {
-  _id: ID!
-  service: String!
-  date: DateTime!
-  views: Int!
-  applicationCount: Int!
-  rating: Float!
-  reviewCount: Int!
-}
-
 type PlatformStatsType {
   totalUsers: Int!
   totalAgencies: Int!
@@ -525,11 +525,18 @@ type PhotosInquiryResult {
   metaCounter: [PhotoInquiryMeta!]!
 }
 
+type PhotoCommentAttachmentType {
+  url: String!
+  type: String!
+  name: String!
+}
+
 type PhotoCommentType {
   _id: ID!
   photo: String!
   user: String!
-  text: String!
+  text: String
+  attachments: [PhotoCommentAttachmentType!]
   userName: String
   userAvatar: String
   createdAt: DateTime
@@ -547,23 +554,25 @@ type Query {
   getAgencyBySlug(slug: String!): AgencyType
   myAgency: AgencyType
   getViewCount(targetId: String!, targetType: ViewTargetType!): Int!
+  agencyStats(agencyId: String!, from: DateTime, to: DateTime): [AgencyStatType!]!
+  serviceStats(serviceId: String!, from: DateTime, to: DateTime): [ServiceStatType!]!
   getServices(input: ServicesInquiryInput!): ServicesInquiryResult!
   getService(id: String!): ServiceGraphType
   getServicesByAgency(agencyId: String!): [ServiceGraphType!]!
+  followStatus(agencyId: String!): FollowStatusType!
+  myFollowingAgencies: [FollowType!]!
+  agencyFollowers(agencyId: String!): [FollowType!]!
+  getMyNotifications(input: NotificationsInquiryInput!): NotificationsInquiryResult!
+  getUnreadNotificationCount: Int!
   applications: [ApplicationType!]!
   myApplications: [ApplicationType!]!
   applicationsByAgency(agencyId: String!): [ApplicationType!]!
   applicationsByService(serviceId: String!): [ApplicationType!]!
-  getMyNotifications(input: NotificationsInquiryInput!): NotificationsInquiryResult!
-  getUnreadNotificationCount: Int!
   reviewsByAgency(agencyId: String!): [ReviewType!]!
   reviewsByService(serviceId: String!): [ReviewType!]!
   countries(filter: CountryFilterInput): [CountryType!]!
   country(id: String!): CountryType
   countryByCode(code: String!): CountryType
-  followStatus(agencyId: String!): FollowStatusType!
-  myFollowingAgencies: [FollowType!]!
-  agencyFollowers(agencyId: String!): [FollowType!]!
   myConversations: [ConversationType!]!
   conversationMessages(conversationId: String!, limit: Int, skip: Int): [MessageType!]!
   subscriptionPlans: [SubscriptionPlanType!]!
@@ -571,8 +580,6 @@ type Query {
   allSubscriptionPlans: [SubscriptionPlanType!]!
   agencySubscriptions(agencyId: String!): [AgencySubscriptionType!]!
   activeSubscription(agencyId: String!): AgencySubscriptionType
-  agencyStats(agencyId: String!, from: DateTime, to: DateTime): [AgencyStatType!]!
-  serviceStats(serviceId: String!, from: DateTime, to: DateTime): [ServiceStatType!]!
   platformStats: PlatformStatsType!
   monthlyStats(months: Int): [MonthlyStatPoint!]!
   pendingVerifications: [AgencyType!]!
@@ -704,16 +711,16 @@ type Mutation {
   createService(agencyId: String!, input: CreateServiceInput!): ServiceGraphType!
   updateService(id: String!, input: UpdateServiceInput!): ServiceGraphType!
   deleteService(id: String!): Boolean!
-  createApplication(input: CreateApplicationInput!): ApplicationType!
-  updateApplicationStatus(id: String!, input: UpdateApplicationInput!): ApplicationType!
-  markNotificationAsRead(notificationId: String!): NotificationGqlType
-  markAllNotificationsAsRead: Int!
-  createReview(input: CreateReviewInput!): ReviewType!
-  createCountry(input: CreateCountryInput!): CountryType!
-  toggleCountryActive(id: String!): CountryType
   followAgency(agencyId: String!): FollowType!
   unfollowAgency(agencyId: String!): Boolean!
   toggleFollowNotifications(agencyId: String!): FollowType!
+  markNotificationAsRead(notificationId: String!): NotificationGqlType
+  markAllNotificationsAsRead: Int!
+  createApplication(input: CreateApplicationInput!): ApplicationType!
+  updateApplicationStatus(id: String!, input: UpdateApplicationInput!): ApplicationType!
+  createReview(input: CreateReviewInput!): ReviewType!
+  createCountry(input: CreateCountryInput!): CountryType!
+  toggleCountryActive(id: String!): CountryType
   createOrGetConversation(input: CreateConversationInput!): ConversationType!
   sendMessage(input: SendMessageInput!): MessageType!
   editMessage(input: EditMessageInput!): MessageType!
@@ -942,5 +949,6 @@ input CreatePhotoInput {
 
 input CreatePhotoCommentInput {
   photoId: String!
-  text: String!
+  text: String
+  attachmentUrls: [String!]
 }

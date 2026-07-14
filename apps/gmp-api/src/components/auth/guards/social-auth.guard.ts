@@ -50,12 +50,20 @@ export class GoogleAuthGuard extends AuthGuard('google') {
 
   async canActivate(context: ExecutionContext): Promise<boolean> {
     const req = context.switchToHttp().getRequest();
-    assertSocialRequestAllowed('google', this.configService, this.oauthStateService, req);
+    assertSocialRequestAllowed(
+      'google',
+      this.configService,
+      this.oauthStateService,
+      req,
+    );
     return (await super.canActivate(context)) as boolean;
   }
 
   getAuthenticateOptions(context: ExecutionContext) {
-    return socialAuthenticateOptions(this.oauthStateService, context.switchToHttp().getRequest());
+    return socialAuthenticateOptions(
+      this.oauthStateService,
+      context.switchToHttp().getRequest(),
+    );
   }
 }
 
@@ -70,12 +78,20 @@ export class KakaoAuthGuard extends AuthGuard('kakao') {
 
   async canActivate(context: ExecutionContext): Promise<boolean> {
     const req = context.switchToHttp().getRequest();
-    assertSocialRequestAllowed('kakao', this.configService, this.oauthStateService, req);
+    assertSocialRequestAllowed(
+      'kakao',
+      this.configService,
+      this.oauthStateService,
+      req,
+    );
     return (await super.canActivate(context)) as boolean;
   }
 
   getAuthenticateOptions(context: ExecutionContext) {
-    return socialAuthenticateOptions(this.oauthStateService, context.switchToHttp().getRequest());
+    return socialAuthenticateOptions(
+      this.oauthStateService,
+      context.switchToHttp().getRequest(),
+    );
   }
 }
 
@@ -90,11 +106,19 @@ export class NaverAuthGuard extends AuthGuard('naver') {
 
   async canActivate(context: ExecutionContext): Promise<boolean> {
     const req = context.switchToHttp().getRequest();
-    assertSocialRequestAllowed('naver', this.configService, this.oauthStateService, req);
+    assertSocialRequestAllowed(
+      'naver',
+      this.configService,
+      this.oauthStateService,
+      req,
+    );
     return (await super.canActivate(context)) as boolean;
   }
 
   getAuthenticateOptions(context: ExecutionContext) {
-    return socialAuthenticateOptions(this.oauthStateService, context.switchToHttp().getRequest());
+    return socialAuthenticateOptions(
+      this.oauthStateService,
+      context.switchToHttp().getRequest(),
+    );
   }
 }

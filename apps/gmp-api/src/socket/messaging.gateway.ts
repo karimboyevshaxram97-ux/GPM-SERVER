@@ -27,7 +27,9 @@ interface InfoPayload {
 }
 
 @WebSocketGateway({ transports: ['websocket'], secure: false })
-export class MessagingGateway implements OnGatewayInit, OnGatewayConnection, OnGatewayDisconnect {
+export class MessagingGateway
+  implements OnGatewayInit, OnGatewayConnection, OnGatewayDisconnect
+{
   private readonly logger = new Logger('MessagingGateway');
   private summaryClients = 0;
   private clientsAuthMap = new Map<WebSocket, UserDocument | null>();
@@ -47,8 +49,12 @@ export class MessagingGateway implements OnGatewayInit, OnGatewayConnection, OnG
     this.summaryClients++;
     this.clientsAuthMap.set(client, authUser);
 
-    const nick = authUser ? `${authUser.firstName} ${authUser.lastName}` : 'Guest';
-    this.logger.verbose(`CONNECTED [${nick}] — total: [${this.summaryClients}]`);
+    const nick = authUser
+      ? `${authUser.firstName} ${authUser.lastName}`
+      : 'Guest';
+    this.logger.verbose(
+      `CONNECTED [${nick}] — total: [${this.summaryClients}]`,
+    );
 
     const infoMsg: InfoPayload = {
       event: 'info',
@@ -57,7 +63,9 @@ export class MessagingGateway implements OnGatewayInit, OnGatewayConnection, OnG
       action: 'joined',
     };
     this.emitMessage(infoMsg);
-    client.send(JSON.stringify({ event: 'getMessages', list: this.messagesList }));
+    client.send(
+      JSON.stringify({ event: 'getMessages', list: this.messagesList }),
+    );
   }
 
   handleDisconnect(client: WebSocket): void {
@@ -65,8 +73,12 @@ export class MessagingGateway implements OnGatewayInit, OnGatewayConnection, OnG
     this.summaryClients--;
     this.clientsAuthMap.delete(client);
 
-    const nick = authUser ? `${authUser.firstName} ${authUser.lastName}` : 'Guest';
-    this.logger.verbose(`DISCONNECTED [${nick}] — total: [${this.summaryClients}]`);
+    const nick = authUser
+      ? `${authUser.firstName} ${authUser.lastName}`
+      : 'Guest';
+    this.logger.verbose(
+      `DISCONNECTED [${nick}] — total: [${this.summaryClients}]`,
+    );
 
     const infoMsg: InfoPayload = {
       event: 'info',
@@ -85,7 +97,9 @@ export class MessagingGateway implements OnGatewayInit, OnGatewayConnection, OnG
 
     const newMessage: MessagePayload = { event: 'message', text, authUser };
 
-    const nick = authUser ? `${authUser.firstName} ${authUser.lastName}` : 'Guest';
+    const nick = authUser
+      ? `${authUser.firstName} ${authUser.lastName}`
+      : 'Guest';
     this.logger.verbose(`MESSAGE [${nick}]: ${text}`);
 
     this.pushMessage(newMessage);
@@ -109,7 +123,8 @@ export class MessagingGateway implements OnGatewayInit, OnGatewayConnection, OnG
 
   private pushMessage(message: MessagePayload): void {
     this.messagesList.push(message);
-    if (this.messagesList.length > 5) this.messagesList.splice(0, this.messagesList.length - 5);
+    if (this.messagesList.length > 5)
+      this.messagesList.splice(0, this.messagesList.length - 5);
   }
 
   private async emitGeminiReply(userText: string): Promise<void> {
@@ -203,7 +218,10 @@ export class MessagingGateway implements OnGatewayInit, OnGatewayConnection, OnG
   }
 
   /** Yuboruvchidan boshqa barcha clientlarga yuboradi */
-  private broadcastMessage(sender: WebSocket, message: InfoPayload | MessagePayload): void {
+  private broadcastMessage(
+    sender: WebSocket,
+    message: InfoPayload | MessagePayload,
+  ): void {
     this.server.clients.forEach((client) => {
       if (client !== sender && client.readyState === WebSocket.OPEN) {
         client.send(JSON.stringify(message));

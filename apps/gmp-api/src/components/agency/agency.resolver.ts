@@ -5,7 +5,10 @@ import { AgencyType } from '../../libs/dto/agency/agency.type';
 import { AgenciesInquiryInput } from '../../libs/dto/agency/agencies-inquiry.input';
 import { AgenciesInquiryResult } from '../../libs/dto/agency/agencies-inquiry.result';
 import { AgenciesForMapInput } from '../../libs/dto/agency/agencies-for-map.input';
-import { CreateAgencyInput, UpdateAgencyInput } from '../../libs/dto/agency/agency.input';
+import {
+  CreateAgencyInput,
+  UpdateAgencyInput,
+} from '../../libs/dto/agency/agency.input';
 import { GqlRolesGuard } from '../auth/guards/gql-roles.guard';
 import { WithoutAuth } from '../auth/guards/without.guard';
 import { Roles } from '../auth/decorators/roles.decorator';
@@ -47,7 +50,9 @@ export class AgencyResolver {
 
   @WithoutAuth()
   @Query(() => AgencyType, { name: 'getAgencyBySlug', nullable: true })
-  async getAgencyBySlug(@Args('slug') slug: string): Promise<AgencyType | null> {
+  async getAgencyBySlug(
+    @Args('slug') slug: string,
+  ): Promise<AgencyType | null> {
     console.log('Query: getAgencyBySlug');
     return this.agencyService.findPublicBySlug(slug) as any;
   }

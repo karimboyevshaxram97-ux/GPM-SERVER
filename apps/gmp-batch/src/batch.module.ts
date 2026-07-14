@@ -7,6 +7,7 @@ import { BatchService } from './batch.service';
 import { DatabaseModule } from './database/database.module';
 import { Agency, AgencySchema } from './schemas/Agency.model';
 import { Service, ServiceSchema } from './schemas/Service.model';
+import { AgencySubscription, AgencySubscriptionSchema } from './schemas/AgencySubscription.model';
 
 @Module({
   imports: [
@@ -19,6 +20,7 @@ import { Service, ServiceSchema } from './schemas/Service.model';
     MongooseModule.forFeature([
       { name: Agency.name, schema: AgencySchema },
       { name: Service.name, schema: ServiceSchema },
+      { name: AgencySubscription.name, schema: AgencySubscriptionSchema },
     ]),
   ],
   controllers: [BatchController],

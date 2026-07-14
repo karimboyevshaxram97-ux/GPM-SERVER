@@ -27,7 +27,10 @@ export class SubscriptionPlan {
   @Prop({ default: 'USD' })
   currency: string;
 
-  @Prop({ type: [{ name: String, included: Boolean, limit: Number }], default: [] })
+  @Prop({
+    type: [{ name: String, included: Boolean, limit: Number }],
+    default: [],
+  })
   features: { name: string; included: boolean; limit?: number }[];
 
   @Prop({ default: 10 })
@@ -52,7 +55,8 @@ export class SubscriptionPlan {
   status: PlanStatus;
 }
 
-export const SubscriptionPlanSchema = SchemaFactory.createForClass(SubscriptionPlan);
+export const SubscriptionPlanSchema =
+  SchemaFactory.createForClass(SubscriptionPlan);
 
 // slug already indexed via unique: true in @Prop
 SubscriptionPlanSchema.index({ status: 1, displayOrder: 1 });

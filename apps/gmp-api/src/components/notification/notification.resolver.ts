@@ -15,7 +15,10 @@ export class NotificationResolver {
     @CurrentUser() user: any,
   ): Promise<NotificationsInquiryResult> {
     console.log('Query: getMyNotifications');
-    return this.notificationService.getMyNotifications(user._id.toString(), input);
+    return this.notificationService.getMyNotifications(
+      user._id.toString(),
+      input,
+    );
   }
 
   @Query(() => Int, { name: 'getUnreadNotificationCount' })
@@ -24,13 +27,19 @@ export class NotificationResolver {
     return this.notificationService.getUnreadCount(user._id.toString());
   }
 
-  @Mutation(() => NotificationGqlType, { name: 'markNotificationAsRead', nullable: true })
+  @Mutation(() => NotificationGqlType, {
+    name: 'markNotificationAsRead',
+    nullable: true,
+  })
   async markNotificationAsRead(
     @Args('notificationId') notificationId: string,
     @CurrentUser() user: any,
   ): Promise<NotificationGqlType | null> {
     console.log('Mutation: markNotificationAsRead');
-    return this.notificationService.markAsRead(notificationId, user._id.toString()) as any;
+    return this.notificationService.markAsRead(
+      notificationId,
+      user._id.toString(),
+    ) as any;
   }
 
   @Mutation(() => Int, { name: 'markAllNotificationsAsRead' })

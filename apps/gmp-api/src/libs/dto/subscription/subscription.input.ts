@@ -1,5 +1,14 @@
 import { InputType, Field, Int, Float } from '@nestjs/graphql';
-import { IsString, IsNumber, IsOptional, IsBoolean, IsEnum, IsArray, ValidateNested, Min } from 'class-validator';
+import {
+  IsString,
+  IsNumber,
+  IsOptional,
+  IsBoolean,
+  IsEnum,
+  IsArray,
+  ValidateNested,
+  Min,
+} from 'class-validator';
 import { Type } from 'class-transformer';
 import { BillingCycle, SupportLevel } from '../../enums';
 

@@ -12,7 +12,6 @@ export class MeFollowed {
   myFollowing?: boolean;
 }
 
-
 @ObjectType()
 export class FollowType {
   @Field(() => ID)

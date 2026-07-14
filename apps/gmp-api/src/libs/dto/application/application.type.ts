@@ -1,5 +1,9 @@
 import { ObjectType, Field, ID } from '@nestjs/graphql';
-import { ApplicationStatus, ApplicationPriority, PaymentStatus } from '../../enums';
+import {
+  ApplicationStatus,
+  ApplicationPriority,
+  PaymentStatus,
+} from '../../enums';
 
 @ObjectType()
 export class ApplicationType {

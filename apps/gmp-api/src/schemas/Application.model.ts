@@ -1,6 +1,10 @@
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
 import { HydratedDocument, Types } from 'mongoose';
-import { ApplicationStatus, ApplicationPriority, PaymentStatus } from '../libs/enums';
+import {
+  ApplicationStatus,
+  ApplicationPriority,
+  PaymentStatus,
+} from '../libs/enums';
 
 export type ApplicationDocument = HydratedDocument<Application>;
 
@@ -54,9 +58,25 @@ export class Application {
 
 export const ApplicationSchema = SchemaFactory.createForClass(Application);
 
+// Ariza REJECTED yoki WITHDRAWN bo'lsa, foydalanuvchi shu xizmatga qayta ariza
+// bera olishi kerak — shuning uchun unique cheklov faqat "faol" statuslarga tegishli.
+export const ACTIVE_APPLICATION_STATUSES = [
+  ApplicationStatus.SUBMITTED,
+  ApplicationStatus.UNDER_REVIEW,
+  ApplicationStatus.APPROVED,
+  ApplicationStatus.ACCEPTED,
+  ApplicationStatus.COMPLETED,
+];
+
 // Indexes
 ApplicationSchema.index({ user: 1, createdAt: -1 });
-ApplicationSchema.index({ user: 1, service: 1 }, { unique: true });
+ApplicationSchema.index(
+  { user: 1, service: 1 },
+  {
+    unique: true,
+    partialFilterExpression: { status: { $in: ACTIVE_APPLICATION_STATUSES } },
+  },
+);
 ApplicationSchema.index({ agency: 1, status: 1, createdAt: -1 });
 ApplicationSchema.index({ service: 1, status: 1 });
 ApplicationSchema.index({ paymentStatus: 1, appliedAt: -1 });

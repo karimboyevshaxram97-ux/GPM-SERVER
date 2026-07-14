@@ -2,13 +2,30 @@ import { ApolloDriver, ApolloDriverConfig } from '@nestjs/apollo';
 import { join } from 'path';
 import { registerEnumType } from '@nestjs/graphql';
 import { AgencyStatus, AgencyVerificationStatus } from '../enums/agency.enum';
-import { ServiceStatus, ServiceType, ServiceVisibility } from '../enums/service.enum';
-import { ApplicationStatus, ApplicationPriority, PaymentStatus } from '../enums/application.enum';
-import { SubscriptionStatus, BillingCycle, PlanStatus, SupportLevel } from '../enums/subscription.enum';
+import {
+  ServiceStatus,
+  ServiceType,
+  ServiceVisibility,
+} from '../enums/service.enum';
+import {
+  ApplicationStatus,
+  ApplicationPriority,
+  PaymentStatus,
+} from '../enums/application.enum';
+import {
+  SubscriptionStatus,
+  BillingCycle,
+  PlanStatus,
+  SupportLevel,
+} from '../enums/subscription.enum';
 import { ReviewStatus } from '../enums/review.enum';
 import { AuthProvider, UserRole, UserStatus } from '../enums/user.enum';
 import { ConversationStatus } from '../enums/messaging.enum';
-import { Direction, AgencyInquirySort, ServiceInquirySort } from '../enums/inquiry.enum';
+import {
+  Direction,
+  AgencyInquirySort,
+  ServiceInquirySort,
+} from '../enums/inquiry.enum';
 import { NotificationType } from '../enums/notification.enum';
 import { LikeTargetType, ViewTargetType } from '../enums/like-view.enum';
 import { Lang } from '../enums/lang.enum';
@@ -19,7 +36,9 @@ registerEnumType(UserStatus, { name: 'UserStatus' });
 registerEnumType(AuthProvider, { name: 'AuthProvider' });
 
 registerEnumType(AgencyStatus, { name: 'AgencyStatus' });
-registerEnumType(AgencyVerificationStatus, { name: 'AgencyVerificationStatus' });
+registerEnumType(AgencyVerificationStatus, {
+  name: 'AgencyVerificationStatus',
+});
 registerEnumType(SubscriptionStatus, { name: 'SubscriptionStatus' });
 
 registerEnumType(ServiceType, { name: 'ServiceType' });

@@ -1,15 +1,32 @@
 import { Resolver, Query, Mutation, Args } from '@nestjs/graphql';
-import { BadRequestException, ForbiddenException, UseGuards, InternalServerErrorException } from '@nestjs/common';
+import {
+  BadRequestException,
+  ForbiddenException,
+  UseGuards,
+  InternalServerErrorException,
+} from '@nestjs/common';
 import { ApplicationService } from './application.service';
 import { ServiceService } from '../service/service.service';
 import { AgencyService } from '../agency/agency.service';
 import { NotificationService } from '../notification/notification.service';
 import { ApplicationType } from '../../libs/dto/application/application.type';
-import { CreateApplicationInput, UpdateApplicationInput } from '../../libs/dto/application/application.input';
+import {
+  CreateApplicationInput,
+  UpdateApplicationInput,
+} from '../../libs/dto/application/application.input';
 import { GqlRolesGuard } from '../auth/guards/gql-roles.guard';
 import { Roles } from '../auth/decorators/roles.decorator';
 import { CurrentUser } from '../auth/decorators/current-user.decorator';
-import { AgencyStatus, AgencyVerificationStatus, ApplicationStatus, NotificationType, ServiceStatus, ServiceVisibility, UserRole, Message } from '../../libs/enums';
+import {
+  AgencyStatus,
+  AgencyVerificationStatus,
+  ApplicationStatus,
+  NotificationType,
+  ServiceStatus,
+  ServiceVisibility,
+  UserRole,
+  Message,
+} from '../../libs/enums';
 
 @Resolver(() => ApplicationType)
 export class ApplicationResolver {
@@ -60,7 +77,8 @@ export class ApplicationResolver {
   ): Promise<ApplicationType[]> {
     console.log('Query: applicationsByService');
     const service = await this.serviceService.findById(serviceId);
-    if (!service) throw new InternalServerErrorException(Message.SERVICE_NOT_FOUND);
+    if (!service)
+      throw new InternalServerErrorException(Message.SERVICE_NOT_FOUND);
     await this.agencyService.assertAgencyAdmin(service.agency.toString(), user);
     return this.applicationService.findByService(serviceId) as any;
   }
@@ -72,25 +90,37 @@ export class ApplicationResolver {
   ): Promise<ApplicationType> {
     console.log('Mutation: createApplication');
     const service = await this.serviceService.findById(input.serviceId);
-    if (!service) throw new InternalServerErrorException(Message.SERVICE_NOT_FOUND);
-    if (service.status !== ServiceStatus.ACTIVE || service.visibility !== ServiceVisibility.PUBLIC) {
+    if (!service)
+      throw new InternalServerErrorException(Message.SERVICE_NOT_FOUND);
+    if (
+      service.status !== ServiceStatus.ACTIVE ||
+      service.visibility !== ServiceVisibility.PUBLIC
+    ) {
       throw new ForbiddenException(Message.NOT_ALLOWED_REQUEST);
     }
 
     const agency = await this.agencyService.findById(service.agency.toString());
-    if (!agency) throw new InternalServerErrorException(Message.AGENCY_NOT_FOUND);
-    if (agency.status !== AgencyStatus.ACTIVE || agency.verificationStatus !== AgencyVerificationStatus.VERIFIED) {
+    if (!agency)
+      throw new InternalServerErrorException(Message.AGENCY_NOT_FOUND);
+    if (
+      agency.status !== AgencyStatus.ACTIVE ||
+      agency.verificationStatus !== AgencyVerificationStatus.VERIFIED
+    ) {
       throw new ForbiddenException(Message.NOT_ALLOWED_REQUEST);
     }
 
-    const alreadyApplied = await this.applicationService.existsForUserAndService(
-      user._id.toString(),
-      service._id.toString(),
-    );
+    const alreadyApplied =
+      await this.applicationService.existsForUserAndService(
+        user._id.toString(),
+        service._id.toString(),
+      );
     if (alreadyApplied) throw new BadRequestException(Message.ALREADY_EXISTS);
 
-    const slotReserved = await this.serviceService.reserveApplicationSlot(service._id.toString());
-    if (!slotReserved) throw new BadRequestException(Message.NOT_ALLOWED_REQUEST);
+    const slotReserved = await this.serviceService.reserveApplicationSlot(
+      service._id.toString(),
+    );
+    if (!slotReserved)
+      throw new BadRequestException(Message.NOT_ALLOWED_REQUEST);
 
     let application;
     try {
@@ -106,17 +136,18 @@ export class ApplicationResolver {
     }
 
     if (agency?.owner) {
+      const serviceName = service.name?.en || service.name?.uz || '';
       await this.notificationService.notify({
         recipient: agency.owner.toString(),
         sender: user._id.toString(),
         type: NotificationType.APPLICATION_RECEIVED,
-        message: `New application received for "${service.name}"`,
+        message: `New application received for "${serviceName}"`,
         targetId: application._id.toString(),
         targetType: 'Application',
       });
     }
 
-    return application as any;
+    return application;
   }
 
   @Mutation(() => ApplicationType, { name: 'updateApplicationStatus' })
@@ -127,7 +158,8 @@ export class ApplicationResolver {
   ): Promise<ApplicationType> {
     console.log('Mutation: updateApplicationStatus');
     const existing = await this.applicationService.findById(id);
-    if (!existing) throw new InternalServerErrorException(Message.APPLICATION_NOT_FOUND);
+    if (!existing)
+      throw new InternalServerErrorException(Message.APPLICATION_NOT_FOUND);
     const canManage = await this.agencyService
       .assertAgencyAdmin(existing.agency.toString(), user)
       .then(() => true)
@@ -137,9 +169,12 @@ export class ApplicationResolver {
       const isOwnerWithdraw =
         existing.user.toString() === user._id.toString() &&
         input.status === ApplicationStatus.WITHDRAWN &&
-        Object.keys(input).every((key) => ['status', 'notes', 'documents'].includes(key));
+        Object.keys(input).every((key) =>
+          ['status', 'notes', 'documents'].includes(key),
+        );
 
-      if (!isOwnerWithdraw) throw new ForbiddenException(Message.NOT_ALLOWED_REQUEST);
+      if (!isOwnerWithdraw)
+        throw new ForbiddenException(Message.NOT_ALLOWED_REQUEST);
     }
 
     const updated = await this.applicationService.update(id, input);

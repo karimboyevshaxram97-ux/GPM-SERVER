@@ -1,4 +1,9 @@
-import { Injectable, CanActivate, ExecutionContext, UnauthorizedException } from '@nestjs/common';
+import {
+  Injectable,
+  CanActivate,
+  ExecutionContext,
+  UnauthorizedException,
+} from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import { ConfigService } from '@nestjs/config';
 import { Reflector } from '@nestjs/core';
@@ -23,26 +28,34 @@ export class GqlJwtAuthGuard implements CanActivate {
     ]);
     if (isPublic) return true;
 
-    const isWithout = this.reflector.getAllAndOverride<boolean>(IS_WITHOUT_KEY, [
-      context.getHandler(),
-      context.getClass(),
-    ]);
+    const isWithout = this.reflector.getAllAndOverride<boolean>(
+      IS_WITHOUT_KEY,
+      [context.getHandler(), context.getClass()],
+    );
 
     const req =
       context.getType<string>() === 'graphql'
         ? GqlExecutionContext.create(context).getContext<{ req: any }>().req
         : context.switchToHttp().getRequest();
     const secret = this.configService.get<string>('jwt.secret');
-    if (!secret) throw new UnauthorizedException('JWT secret is not configured');
+    if (!secret)
+      throw new UnauthorizedException('JWT secret is not configured');
 
     if (isWithout) {
       try {
         const token = this.extractToken(req);
         if (token) {
-          const payload = this.jwtService.verify<{ sub: string }>(token, { secret });
+          const payload = this.jwtService.verify<{ sub: string }>(token, {
+            secret,
+          });
           const user = await this.userService.findById(payload.sub);
-          const userObject = user ? (user.toObject ? user.toObject() : user) : null;
-          req.user = userObject?.status === UserStatus.ACTIVE ? userObject : null;
+          const userObject = user
+            ? user.toObject
+              ? user.toObject()
+              : user
+            : null;
+          req.user =
+            userObject?.status === UserStatus.ACTIVE ? userObject : null;
         }
       } catch {}
       return true;

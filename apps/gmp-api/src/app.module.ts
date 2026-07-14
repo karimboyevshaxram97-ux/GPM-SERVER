@@ -4,13 +4,13 @@ import { ConfigModule, ConfigService } from '@nestjs/config';
 import { MongooseModule } from '@nestjs/mongoose';
 import { GraphQLModule } from '@nestjs/graphql';
 import { JwtModule } from '@nestjs/jwt';
-import { MongoMemoryServer } from 'mongodb-memory-server';
 import { GqlJwtAuthGuard } from './components/auth/guards/gql-jwt-auth.guard';
 import { GqlRolesGuard } from './components/auth/guards/gql-roles.guard';
 
 import databaseConfig from './libs/config/database.config';
 import jwtConfig from './libs/config/jwt.config';
 import oauthConfig from './libs/config/oauth.config';
+import { getEnvFilePaths } from './libs/config/env-paths';
 import { graphqlConfig } from './libs/config/graphql.config';
 
 import { HealthModule } from './components/health/health.module';
@@ -38,7 +38,7 @@ import { PhotoModule } from './components/photo/photo.module';
   imports: [
     ConfigModule.forRoot({
       isGlobal: true,
-      envFilePath: '.env.local',
+      envFilePath: getEnvFilePaths(),
       load: [databaseConfig, jwtConfig, oauthConfig],
     }),
 
@@ -48,28 +48,44 @@ import { PhotoModule } from './components/photo/photo.module';
         let uri = configService.get<string>('database.mongodb.uri');
 
         const isProduction = process.env.NODE_ENV === 'production';
+        const allowInMemory =
+          !isProduction &&
+          /^(1|true|yes)$/i.test(process.env.ALLOW_IN_MEMORY_MONGO ?? '');
 
         if (uri) {
           try {
             const { MongoClient } = await import('mongodb');
-            const client = new MongoClient(uri, { serverSelectionTimeoutMS: 3000 });
+            const client = new MongoClient(uri, {
+              serverSelectionTimeoutMS: 10000,
+            });
             await client.connect();
             await client.db().command({ ping: 1 });
             await client.close();
             logger.log('Connected to configured MongoDB URI.');
           } catch (err) {
-            if (isProduction) {
+            if (!allowInMemory) {
+              logger.error(
+                'Cannot connect to configured MongoDB URI. Refusing to start without a persistent database.',
+              );
               throw err;
             }
-            logger.warn('Cannot connect to configured MongoDB URI, falling back to in-memory MongoDB.');
+            logger.warn(
+              'Cannot connect to configured MongoDB URI, using explicit in-memory MongoDB fallback.',
+            );
+            const { MongoMemoryServer } = await import('mongodb-memory-server');
             const mongod = await MongoMemoryServer.create();
             uri = mongod.getUri();
           }
         } else {
-          if (isProduction) {
-            throw new Error('MongoDB URI must be set in production');
+          if (!allowInMemory) {
+            throw new Error(
+              'MongoDB URI must be set. Set ALLOW_IN_MEMORY_MONGO=true only for disposable local demos/tests.',
+            );
           }
-          logger.log('MongoDB URI not set, starting in-memory MongoDB for local development.');
+          logger.warn(
+            'MongoDB URI not set, using explicit in-memory MongoDB fallback.',
+          );
+          const { MongoMemoryServer } = await import('mongodb-memory-server');
           const mongod = await MongoMemoryServer.create();
           uri = mongod.getUri();
         }

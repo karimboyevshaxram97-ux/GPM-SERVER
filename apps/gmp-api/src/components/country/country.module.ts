@@ -5,7 +5,9 @@ import { CountryService } from './country.service';
 import { CountryResolver } from './country.resolver';
 
 @Module({
-  imports: [MongooseModule.forFeature([{ name: Country.name, schema: CountrySchema }])],
+  imports: [
+    MongooseModule.forFeature([{ name: Country.name, schema: CountrySchema }]),
+  ],
   providers: [CountryService, CountryResolver],
   exports: [CountryService],
 })

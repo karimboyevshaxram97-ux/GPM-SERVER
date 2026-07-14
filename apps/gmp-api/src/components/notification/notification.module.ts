@@ -1,6 +1,9 @@
 import { Module } from '@nestjs/common';
 import { MongooseModule } from '@nestjs/mongoose';
-import { Notification, NotificationSchema } from '../../schemas/Notification.model';
+import {
+  Notification,
+  NotificationSchema,
+} from '../../schemas/Notification.model';
 import { NotificationService } from './notification.service';
 import { NotificationResolver } from './notification.resolver';
 import { NotificationGateway } from '../../socket/notification.gateway';
@@ -8,10 +11,12 @@ import { AuthModule } from '../auth/auth.module';
 
 @Module({
   imports: [
-    MongooseModule.forFeature([{ name: Notification.name, schema: NotificationSchema }]),
+    MongooseModule.forFeature([
+      { name: Notification.name, schema: NotificationSchema },
+    ]),
     AuthModule,
   ],
   providers: [NotificationService, NotificationResolver, NotificationGateway],
-  exports: [NotificationService],
+  exports: [NotificationService, NotificationGateway],
 })
 export class NotificationModule {}

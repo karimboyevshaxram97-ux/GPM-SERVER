@@ -1,6 +1,9 @@
 import { Args, Mutation, Query, Resolver } from '@nestjs/graphql';
 import { FollowService } from './follow.service';
-import { FollowType, FollowStatusType } from '../../libs/dto/follow/follow.type';
+import {
+  FollowType,
+  FollowStatusType,
+} from '../../libs/dto/follow/follow.type';
 import { CurrentUser } from '../auth/decorators/current-user.decorator';
 import { WithoutAuth } from '../auth/guards/without.guard';
 
@@ -32,7 +35,10 @@ export class FollowResolver {
     @CurrentUser() user: any,
   ): Promise<FollowType> {
     console.log('Mutation: toggleFollowNotifications');
-    return this.followService.toggleNotifications(user._id.toString(), agencyId) as any;
+    return this.followService.toggleNotifications(
+      user._id.toString(),
+      agencyId,
+    ) as any;
   }
 
   @Query(() => FollowStatusType, { name: 'followStatus' })

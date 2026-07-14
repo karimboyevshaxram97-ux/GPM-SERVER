@@ -1,6 +1,21 @@
 import { InputType, Field, Int, Float } from '@nestjs/graphql';
-import { IsBoolean, IsEnum, IsInt, IsNumber, IsOptional, IsString, Max, Min } from 'class-validator';
-import { ServiceStatus, ServiceType, ServiceInquirySort, Direction, ServiceVisibility } from '../../enums';
+import {
+  IsBoolean,
+  IsEnum,
+  IsInt,
+  IsNumber,
+  IsOptional,
+  IsString,
+  Max,
+  Min,
+} from 'class-validator';
+import {
+  ServiceStatus,
+  ServiceType,
+  ServiceInquirySort,
+  Direction,
+  ServiceVisibility,
+} from '../../enums';
 
 @InputType()
 export class ServicesInquiryInput {
@@ -54,7 +69,9 @@ export class ServicesInquiryInput {
   @IsNumber()
   maxPrice?: number;
 
-  @Field(() => ServiceInquirySort, { defaultValue: ServiceInquirySort.CREATED_AT })
+  @Field(() => ServiceInquirySort, {
+    defaultValue: ServiceInquirySort.CREATED_AT,
+  })
   @IsEnum(ServiceInquirySort)
   sort: ServiceInquirySort = ServiceInquirySort.CREATED_AT;
 

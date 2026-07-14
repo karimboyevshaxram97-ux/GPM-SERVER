@@ -16,6 +16,9 @@ export class Agency {
 
   @Prop({ default: 0 })
   agencyRank: number;
+
+  @Prop({ default: 'ACTIVE' })
+  subscriptionStatus: string;
 }
 
 export const AgencySchema = SchemaFactory.createForClass(Agency);

@@ -1,7 +1,10 @@
 import { Module } from '@nestjs/common';
 import { MongooseModule } from '@nestjs/mongoose';
 import { AgencyStat, AgencyStatSchema } from '../../schemas/AgencyStat.model';
-import { ServiceStat, ServiceStatSchema } from '../../schemas/ServiceStat.model';
+import {
+  ServiceStat,
+  ServiceStatSchema,
+} from '../../schemas/ServiceStat.model';
 import { AnalyticsService } from './analytics.service';
 import { AnalyticsResolver } from './analytics.resolver';
 

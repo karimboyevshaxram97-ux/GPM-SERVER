@@ -1,11 +1,22 @@
-import { Controller, Get, Req, Res, UseFilters, UseGuards } from '@nestjs/common';
+import {
+  Controller,
+  Get,
+  Req,
+  Res,
+  UseFilters,
+  UseGuards,
+} from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { Request, Response } from 'express';
 import { SocialProfile } from '../../libs';
 import { AuthService } from './auth.service';
 import { Public } from './decorators/public.decorator';
 import { OAuthExceptionFilter } from './filters/oauth-exception.filter';
-import { GoogleAuthGuard, KakaoAuthGuard, NaverAuthGuard } from './guards/social-auth.guard';
+import {
+  GoogleAuthGuard,
+  KakaoAuthGuard,
+  NaverAuthGuard,
+} from './guards/social-auth.guard';
 
 // OAuth redirects cannot go through GraphQL, so social login lives on REST routes:
 //   GET /auth/{provider}           → redirect the browser to the provider
@@ -27,7 +38,10 @@ export class AuthController {
 
   @Get('google/callback')
   @UseGuards(GoogleAuthGuard)
-  async googleCallback(@Req() req: Request, @Res() res: Response): Promise<void> {
+  async googleCallback(
+    @Req() req: Request,
+    @Res() res: Response,
+  ): Promise<void> {
     console.log('GET: /auth/google/callback');
     return this.completeSocialLogin(req, res);
   }
@@ -40,7 +54,10 @@ export class AuthController {
 
   @Get('kakao/callback')
   @UseGuards(KakaoAuthGuard)
-  async kakaoCallback(@Req() req: Request, @Res() res: Response): Promise<void> {
+  async kakaoCallback(
+    @Req() req: Request,
+    @Res() res: Response,
+  ): Promise<void> {
     console.log('GET: /auth/kakao/callback');
     return this.completeSocialLogin(req, res);
   }
@@ -53,15 +70,25 @@ export class AuthController {
 
   @Get('naver/callback')
   @UseGuards(NaverAuthGuard)
-  async naverCallback(@Req() req: Request, @Res() res: Response): Promise<void> {
+  async naverCallback(
+    @Req() req: Request,
+    @Res() res: Response,
+  ): Promise<void> {
     console.log('GET: /auth/naver/callback');
     return this.completeSocialLogin(req, res);
   }
 
-  private async completeSocialLogin(req: Request, res: Response): Promise<void> {
-    const result = await this.authService.socialLogin(req.user as SocialProfile);
+  private async completeSocialLogin(
+    req: Request,
+    res: Response,
+  ): Promise<void> {
+    const result = await this.authService.socialLogin(
+      req.user as SocialProfile,
+    );
 
-    const frontendUrl = this.configService.get<string>('oauth.frontendUrl') ?? 'http://localhost:3000';
+    const frontendUrl =
+      this.configService.get<string>('oauth.frontendUrl') ??
+      'http://localhost:3000';
     const url = new URL('/auth/callback', frontendUrl);
     url.searchParams.set('accessToken', result.accessToken);
     url.searchParams.set('refreshToken', result.refreshToken);
