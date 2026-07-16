@@ -14,6 +14,7 @@ export enum Message {
   AGENCY_NOT_FOUND = 'Agency not found!',
   AGENCY_NOT_VERIFIED = 'Agency is not verified yet!',
   USER_OWNS_AGENCY = 'This user owns an agency. Transfer ownership or delete the agency before removing this user!',
+  CANNOT_MODIFY_SUPER_ADMIN = 'Super admin accounts cannot be suspended or deleted!',
   SERVICE_NOT_FOUND = 'Service not found!',
   APPLICATION_NOT_FOUND = 'Application not found!',
   USER_NOT_FOUND = 'User not found!',

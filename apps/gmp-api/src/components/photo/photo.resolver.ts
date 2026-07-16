@@ -11,7 +11,6 @@ import {
   PhotosInquiryInput,
 } from '../../libs/dto/photo/photo.input';
 import { CurrentUser } from '../auth/decorators/current-user.decorator';
-import { Public } from '../auth/decorators/public.decorator';
 import { WithoutAuth } from '../auth/guards/without.guard';
 
 @Resolver(() => PhotoType)
@@ -28,13 +27,14 @@ export class PhotoResolver {
     return this.photoService.getPhotos(input, user?._id?.toString());
   }
 
-  @Public()
+  @WithoutAuth()
   @Query(() => [PhotoCommentType], { name: 'getPhotoComments' })
   async getPhotoComments(
     @Args('photoId') photoId: string,
+    @CurrentUser() user: any,
   ): Promise<PhotoCommentType[]> {
     console.log('Query: getPhotoComments');
-    return this.photoService.getComments(photoId);
+    return this.photoService.getComments(photoId, user?._id?.toString());
   }
 
   @Mutation(() => PhotoType, { name: 'createPhoto' })

@@ -1,0 +1,18 @@
+export enum ApplicationDocumentKind {
+  PASSPORT = 'PASSPORT',
+  ID_CARD = 'ID_CARD',
+  PHOTO = 'PHOTO',
+  DIPLOMA = 'DIPLOMA',
+  TRANSCRIPT = 'TRANSCRIPT',
+  BANK_STATEMENT = 'BANK_STATEMENT',
+  EMPLOYMENT = 'EMPLOYMENT',
+  VISA_FORM = 'VISA_FORM',
+  OTHER = 'OTHER',
+}
+
+export enum ApplicationDocumentStatus {
+  REQUESTED = 'REQUESTED',
+  UPLOADED = 'UPLOADED',
+  ACCEPTED = 'ACCEPTED',
+  REJECTED = 'REJECTED',
+}

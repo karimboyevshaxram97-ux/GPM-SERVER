@@ -7,7 +7,6 @@ import { ReviewResolver } from './review.resolver';
 import { AgencyModule } from '../agency/agency.module';
 import { ServiceModule } from '../service/service.module';
 import { UserModule } from '../user/user.module';
-import { ApplicationModule } from '../application/application.module';
 
 @Module({
   imports: [
@@ -16,7 +15,6 @@ import { ApplicationModule } from '../application/application.module';
     AgencyModule,
     ServiceModule,
     UserModule,
-    ApplicationModule,
   ],
   providers: [ReviewService, ReviewResolver],
   exports: [ReviewService],

@@ -2,7 +2,6 @@ import { UseGuards } from '@nestjs/common';
 import { Args, Mutation, Query, Resolver } from '@nestjs/graphql';
 import { CurrentUser } from '../auth/decorators/current-user.decorator';
 import { Roles } from '../auth/decorators/roles.decorator';
-import { WithoutAuth } from '../auth/guards/without.guard';
 import { GqlRolesGuard } from '../auth/guards/gql-roles.guard';
 import { UserRole } from '../../libs/enums';
 import { SupportService } from './support.service';
@@ -20,7 +19,6 @@ import {
 export class SupportResolver {
   constructor(private readonly supportService: SupportService) {}
 
-  @WithoutAuth()
   @Mutation(() => SupportTicketType, { name: 'createSupportTicket' })
   async createSupportTicket(
     @Args('input') input: CreateSupportTicketInput,

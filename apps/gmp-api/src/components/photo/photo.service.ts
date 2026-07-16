@@ -125,9 +125,20 @@ export class PhotoService {
 
     await photo.deleteOne();
     // Bog'liq izoh va like'larni ham tozalaymiz
+    const commentIds = await this.photoCommentModel.distinct('_id', {
+      photo: photo._id,
+    });
     await this.photoCommentModel.deleteMany({ photo: photo._id }).exec();
     await this.likeModel
-      .deleteMany({ targetId: photo._id, targetType: LikeTargetType.PHOTO })
+      .deleteMany({
+        $or: [
+          { targetId: photo._id, targetType: LikeTargetType.PHOTO },
+          {
+            targetId: { $in: commentIds },
+            targetType: LikeTargetType.PHOTO_COMMENT,
+          },
+        ],
+      })
       .exec();
 
     // Diskdagi faylni ham o'chiramiz (uploads/photos/<board>/...)
@@ -151,6 +162,20 @@ export class PhotoService {
     const photo = await this.photoModel.findById(input.photoId).exec();
     if (!photo) throw new NotFoundException('Photo not found');
 
+    let parentComment: Types.ObjectId | undefined;
+    if (input.parentCommentId) {
+      const parent = await this.photoCommentModel
+        .findById(input.parentCommentId)
+        .select('_id photo')
+        .exec();
+      if (!parent || parent.photo.toString() !== photo._id.toString()) {
+        throw new BadRequestException(
+          'Reply target must be a comment from the same photo',
+        );
+      }
+      parentComment = parent._id;
+    }
+
     const text = input.text?.trim() || undefined;
     const attachments = this.buildCommentAttachments(
       input.attachmentUrls ?? [],
@@ -171,6 +196,7 @@ export class PhotoService {
     const created = await this.photoCommentModel.create({
       photo: photo._id,
       user: new Types.ObjectId(userId),
+      parentComment,
       text,
       attachments,
     });
@@ -179,7 +205,7 @@ export class PhotoService {
       .findByIdAndUpdate(photo._id, { $inc: { commentCount: 1 } })
       .exec();
 
-    const [comment] = await this.commentsPipeline({ _id: created._id });
+    const [comment] = await this.commentsPipeline({ _id: created._id }, userId);
     return comment;
   }
 
@@ -204,22 +230,32 @@ export class PhotoService {
     });
   }
 
-  async getComments(photoId: string): Promise<PhotoCommentType[]> {
-    return this.commentsPipeline({ photo: new Types.ObjectId(photoId) });
+  async getComments(
+    photoId: string,
+    userId?: string,
+  ): Promise<PhotoCommentType[]> {
+    return this.commentsPipeline(
+      { photo: new Types.ObjectId(photoId) },
+      userId,
+    );
   }
 
   private async commentsPipeline(
     match: Record<string, any>,
+    userId?: string,
   ): Promise<PhotoCommentType[]> {
+    const viewerId = userId ? new Types.ObjectId(userId) : null;
     return this.photoCommentModel
       .aggregate([
         { $match: match },
         { $sort: { createdAt: -1 } },
         { $limit: 100 },
+        lookupAuthUserLiked(viewerId, '$_id', LikeTargetType.PHOTO_COMMENT),
         lookupUserData,
         { $unwind: { path: '$userData', preserveNullAndEmptyArrays: true } },
         {
           $addFields: {
+            likeCount: { $ifNull: ['$likeCount', 0] },
             userName: {
               $trim: {
                 input: {

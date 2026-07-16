@@ -23,7 +23,7 @@ interface InfoPayload {
   event: string;
   totalClients: number;
   authUser: UserDocument | null;
-  action: 'joined' | 'left';
+  action: 'joined' | 'left' | 'sync';
 }
 
 @WebSocketGateway({ transports: ['websocket'], secure: false })
@@ -31,7 +31,7 @@ export class MessagingGateway
   implements OnGatewayInit, OnGatewayConnection, OnGatewayDisconnect
 {
   private readonly logger = new Logger('MessagingGateway');
-  private summaryClients = 0;
+  private connectedClients = new Set<WebSocket>();
   private clientsAuthMap = new Map<WebSocket, UserDocument | null>();
   private messagesList: MessagePayload[] = [];
 
@@ -41,24 +41,26 @@ export class MessagingGateway
   constructor(private readonly authService: AuthService) {}
 
   afterInit(server: Server): void {
-    this.logger.log(`WebSocket initialized — total: [${this.summaryClients}]`);
+    this.logger.log('WebSocket initialized — total: [0]');
   }
 
   async handleConnection(client: WebSocket, req: any): Promise<void> {
+    this.connectedClients.add(client);
     const authUser = await this.retrieveAuth(req);
-    this.summaryClients++;
+    // Token tekshirilayotgan paytda client uzilgan bo'lsa, uni qayta ro'yxatga qo'shmaymiz.
+    if (!this.connectedClients.has(client)) return;
     this.clientsAuthMap.set(client, authUser);
+
+    const onlineUsers = this.getOnlineUsersCount();
 
     const nick = authUser
       ? `${authUser.firstName} ${authUser.lastName}`
       : 'Guest';
-    this.logger.verbose(
-      `CONNECTED [${nick}] — total: [${this.summaryClients}]`,
-    );
+    this.logger.verbose(`CONNECTED [${nick}] — online users: [${onlineUsers}]`);
 
     const infoMsg: InfoPayload = {
       event: 'info',
-      totalClients: this.summaryClients,
+      totalClients: onlineUsers,
       authUser,
       action: 'joined',
     };
@@ -69,24 +71,37 @@ export class MessagingGateway
   }
 
   handleDisconnect(client: WebSocket): void {
+    // Bir socket uchun disconnect ikki marta chaqirilsa son kamayib ketmasin.
+    if (!this.connectedClients.delete(client)) return;
     const authUser = this.clientsAuthMap.get(client) ?? null;
-    this.summaryClients--;
     this.clientsAuthMap.delete(client);
+
+    const onlineUsers = this.getOnlineUsersCount();
 
     const nick = authUser
       ? `${authUser.firstName} ${authUser.lastName}`
       : 'Guest';
     this.logger.verbose(
-      `DISCONNECTED [${nick}] — total: [${this.summaryClients}]`,
+      `DISCONNECTED [${nick}] — online users: [${onlineUsers}]`,
     );
 
     const infoMsg: InfoPayload = {
       event: 'info',
-      totalClients: this.summaryClients,
+      totalClients: onlineUsers,
       authUser,
       action: 'left',
     };
     this.broadcastMessage(client, infoMsg);
+  }
+
+  @SubscribeMessage('getOnlineCount')
+  handleOnlineCount(client: WebSocket): void {
+    this.sendToClient(client, {
+      event: 'info',
+      totalClients: this.getOnlineUsersCount(),
+      authUser: this.clientsAuthMap.get(client) ?? null,
+      action: 'sync',
+    } satisfies InfoPayload);
   }
 
   @SubscribeMessage('message')
@@ -206,6 +221,20 @@ export class MessagingGateway
     } catch {
       return null;
     }
+  }
+
+  /** Login qilgan user bir nechta tab ochsa bir marta, guestlar esa socket bo'yicha sanaladi. */
+  private getOnlineUsersCount(): number {
+    const authenticatedUsers = new Set<string>();
+    let guests = 0;
+
+    this.connectedClients.forEach((client) => {
+      const authUser = this.clientsAuthMap.get(client);
+      if (authUser?._id) authenticatedUsers.add(authUser._id.toString());
+      else guests++;
+    });
+
+    return authenticatedUsers.size + guests;
   }
 
   /** Barcha clientlarga yuboradi */

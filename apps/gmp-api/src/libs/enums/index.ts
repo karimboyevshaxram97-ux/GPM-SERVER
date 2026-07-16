@@ -9,5 +9,6 @@ export * from './like-view.enum';
 export * from './agency.enum';
 export * from './service.enum';
 export * from './application.enum';
+export * from './application-document.enum';
 export * from './subscription.enum';
 export * from './support.enum';

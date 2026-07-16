@@ -2,6 +2,7 @@ import {
   BadRequestException,
   Injectable,
   InternalServerErrorException,
+  UnauthorizedException,
 } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model, Types } from 'mongoose';
@@ -26,12 +27,16 @@ export class SupportService {
 
   async create(
     input: CreateSupportTicketInput,
-    user?: any,
+    user: any,
   ): Promise<SupportTicketDocument> {
+    if (!user?._id) {
+      throw new UnauthorizedException('Authentication is required');
+    }
+
     try {
       return await this.supportTicketModel.create({
         ...input,
-        user: user?._id ? new Types.ObjectId(user._id) : undefined,
+        user: new Types.ObjectId(user._id),
         phoneNumber: user?.phoneNumber,
         role: user?.role,
       });

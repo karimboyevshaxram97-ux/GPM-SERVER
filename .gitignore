@@ -38,6 +38,8 @@ redis_data/
 
 # uploads
 uploads/*
+/apps/*/uploads/*
+/apps/*/private-uploads/*
 
 # GraphQL schema
 src/schema.gql

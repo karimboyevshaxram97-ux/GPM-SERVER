@@ -535,11 +535,52 @@ type PhotoCommentType {
   _id: ID!
   photo: String!
   user: String!
+  parentComment: String
+  likeCount: Int!
+  meLiked: [MeLiked!]
   text: String
   attachments: [PhotoCommentAttachmentType!]
   userName: String
   userAvatar: String
   createdAt: DateTime
+}
+
+type ApplicationDocumentType {
+  _id: ID!
+  application: String!
+  user: String!
+  agency: String!
+  kind: ApplicationDocumentKind!
+  label: String!
+  required: Boolean!
+  status: ApplicationDocumentStatus!
+  originalName: String
+  mimeType: String
+  size: Int
+  rejectionReason: String
+  uploadedAt: DateTime
+  reviewedAt: DateTime
+  createdAt: DateTime!
+  updatedAt: DateTime!
+}
+
+enum ApplicationDocumentKind {
+  PASSPORT
+  ID_CARD
+  PHOTO
+  DIPLOMA
+  TRANSCRIPT
+  BANK_STATEMENT
+  EMPLOYMENT
+  VISA_FORM
+  OTHER
+}
+
+enum ApplicationDocumentStatus {
+  REQUESTED
+  UPLOADED
+  ACCEPTED
+  REJECTED
 }
 
 type Query {
@@ -570,6 +611,7 @@ type Query {
   applicationsByService(serviceId: String!): [ApplicationType!]!
   reviewsByAgency(agencyId: String!): [ReviewType!]!
   reviewsByService(serviceId: String!): [ReviewType!]!
+  myReviewByAgency(agencyId: String!): ReviewType
   countries(filter: CountryFilterInput): [CountryType!]!
   country(id: String!): CountryType
   countryByCode(code: String!): CountryType
@@ -591,6 +633,7 @@ type Query {
   adminSupportTickets(input: SupportTicketsInquiryInput!): SupportTicketsResult!
   getPhotos(input: PhotosInquiryInput!): PhotosInquiryResult!
   getPhotoComments(photoId: String!): [PhotoCommentType!]!
+  applicationDocuments(applicationId: String!): [ApplicationDocumentType!]!
 }
 
 input AgenciesInquiryInput {
@@ -681,6 +724,7 @@ enum LikeTargetType {
   AGENCY
   SERVICE
   PHOTO
+  PHOTO_COMMENT
 }
 
 input SupportTicketsInquiryInput {
@@ -747,6 +791,8 @@ type Mutation {
   createPhoto(input: CreatePhotoInput!): PhotoType!
   deletePhoto(photoId: String!): Boolean!
   createPhotoComment(input: CreatePhotoCommentInput!): PhotoCommentType!
+  requestApplicationDocument(input: RequestApplicationDocumentInput!): ApplicationDocumentType!
+  reviewApplicationDocument(input: ReviewApplicationDocumentInput!): ApplicationDocumentType!
 }
 
 input UpdateUserInput {
@@ -834,6 +880,7 @@ input UpdateServiceInput {
   price: Float
   tags: [String!]
   processingTime: String
+  status: ServiceStatus
   visibility: ServiceVisibility
 }
 
@@ -949,6 +996,20 @@ input CreatePhotoInput {
 
 input CreatePhotoCommentInput {
   photoId: String!
+  parentCommentId: String
   text: String
   attachmentUrls: [String!]
+}
+
+input RequestApplicationDocumentInput {
+  applicationId: String!
+  kind: ApplicationDocumentKind!
+  label: String!
+  required: Boolean = true
+}
+
+input ReviewApplicationDocumentInput {
+  documentId: String!
+  status: ApplicationDocumentStatus!
+  rejectionReason: String
 }

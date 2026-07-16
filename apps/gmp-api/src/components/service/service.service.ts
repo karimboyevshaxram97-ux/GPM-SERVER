@@ -15,6 +15,10 @@ import { Review, ReviewDocument } from '../../schemas/Review.model';
 import { Like, LikeDocument } from '../../schemas/Like.model';
 import { View, ViewDocument } from '../../schemas/View.model';
 import {
+  ApplicationDocument as ApplicationDocumentEntity,
+  ApplicationDocumentRecord,
+} from '../../schemas/ApplicationDocument.model';
+import {
   CreateServiceInput,
   UpdateServiceInput,
 } from '../../libs/dto/service/service.input';
@@ -44,6 +48,8 @@ export class ServiceService {
     private readonly reviewModel: Model<ReviewDocument>,
     @InjectModel(Like.name) private readonly likeModel: Model<LikeDocument>,
     @InjectModel(View.name) private readonly viewModel: Model<ViewDocument>,
+    @InjectModel(ApplicationDocumentEntity.name)
+    private readonly applicationDocumentModel: Model<ApplicationDocumentRecord>,
     private readonly viewService: ViewService,
   ) {}
 
@@ -204,14 +210,22 @@ export class ServiceService {
       .exec();
   }
 
-  async findPublicByAgency(agencyId: string): Promise<ServiceDocument[]> {
-    return this.serviceModel
-      .find({
-        agency: new Types.ObjectId(agencyId),
-        status: ServiceStatus.ACTIVE,
-        visibility: ServiceVisibility.PUBLIC,
-      })
-      .exec();
+  async findPublicByAgency(
+    agencyId: string,
+    userId?: string,
+  ): Promise<ServiceDocument[]> {
+    const userObjId = userId ? new Types.ObjectId(userId) : null;
+    return this.serviceModel.aggregate([
+      {
+        $match: {
+          agency: new Types.ObjectId(agencyId),
+          status: ServiceStatus.ACTIVE,
+          visibility: ServiceVisibility.PUBLIC,
+        },
+      },
+      { $sort: { createdAt: -1 } },
+      lookupAuthUserLiked(userObjId, '$_id', LikeTargetType.SERVICE),
+    ]) as any;
   }
 
   async create(
@@ -245,6 +259,17 @@ export class ServiceService {
     const service = await this.serviceModel.findById(id).exec();
     if (!service) throw new InternalServerErrorException(Message.REMOVE_FAILED);
 
+    const applications = await this.applicationModel
+      .find({ service: service._id })
+      .select('_id')
+      .lean()
+      .exec();
+    const applicationIds = applications.map((application) => application._id);
+    if (applicationIds.length) {
+      await this.applicationDocumentModel
+        .deleteMany({ application: { $in: applicationIds } })
+        .exec();
+    }
     await this.applicationModel.deleteMany({ service: service._id }).exec();
     await this.reviewModel.deleteMany({ service: service._id }).exec();
     await this.likeModel

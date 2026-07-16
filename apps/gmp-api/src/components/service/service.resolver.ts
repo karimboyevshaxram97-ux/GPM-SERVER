@@ -85,6 +85,7 @@ export class ServiceResolver {
   @Query(() => [ServiceGraphType], { name: 'getServicesByAgency' })
   async getServicesByAgency(
     @Args('agencyId') agencyId: string,
+    @CurrentUser() user: any,
   ): Promise<ServiceGraphType[]> {
     console.log('Query: getServicesByAgency');
     const agency = await this.agencyService.findById(agencyId);
@@ -95,7 +96,10 @@ export class ServiceResolver {
     ) {
       return [];
     }
-    return this.serviceService.findPublicByAgency(agencyId) as any;
+    return this.serviceService.findPublicByAgency(
+      agencyId,
+      user?._id?.toString(),
+    ) as any;
   }
 
   @Mutation(() => ServiceGraphType, { name: 'createService' })

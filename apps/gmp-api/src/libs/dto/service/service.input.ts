@@ -91,6 +91,11 @@ export class UpdateServiceInput {
   @IsString()
   processingTime?: string;
 
+  @Field(() => ServiceStatus, { nullable: true })
+  @IsOptional()
+  @IsEnum(ServiceStatus)
+  status?: ServiceStatus;
+
   @Field(() => ServiceVisibility, { nullable: true })
   @IsOptional()
   @IsEnum(ServiceVisibility)

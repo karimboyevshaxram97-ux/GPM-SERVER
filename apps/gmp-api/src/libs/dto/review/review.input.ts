@@ -4,6 +4,7 @@ import {
   IsString,
   IsOptional,
   IsInt,
+  MaxLength,
   Min,
   Max,
 } from 'class-validator';
@@ -28,5 +29,6 @@ export class CreateReviewInput {
   @Field({ nullable: true })
   @IsOptional()
   @IsString()
+  @MaxLength(1000)
   comment?: string;
 }

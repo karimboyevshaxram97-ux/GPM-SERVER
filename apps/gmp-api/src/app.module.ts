@@ -33,6 +33,7 @@ import { LikeModule } from './components/like/like.module';
 import { ViewModule } from './components/view/view.module';
 import { SupportModule } from './components/support/support.module';
 import { PhotoModule } from './components/photo/photo.module';
+import { ApplicationDocumentModule } from './components/application-document/application-document.module';
 
 @Module({
   imports: [
@@ -127,6 +128,7 @@ import { PhotoModule } from './components/photo/photo.module';
     ViewModule,
     SupportModule,
     PhotoModule,
+    ApplicationDocumentModule,
   ],
   providers: [
     {

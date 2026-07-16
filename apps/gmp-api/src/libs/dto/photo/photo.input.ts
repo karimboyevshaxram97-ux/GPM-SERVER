@@ -58,6 +58,11 @@ export class CreatePhotoCommentInput {
 
   @Field({ nullable: true })
   @IsOptional()
+  @IsMongoId()
+  parentCommentId?: string;
+
+  @Field({ nullable: true })
+  @IsOptional()
   @IsString()
   @MaxLength(500)
   text?: string;

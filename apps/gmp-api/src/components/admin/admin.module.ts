@@ -13,6 +13,27 @@ import { Follow, FollowSchema } from '../../schemas/Follow.model';
 import { Like, LikeSchema } from '../../schemas/Like.model';
 import { View, ViewSchema } from '../../schemas/View.model';
 import {
+  ApplicationDocument,
+  ApplicationDocumentSchema,
+} from '../../schemas/ApplicationDocument.model';
+import {
+  Conversation,
+  ConversationSchema,
+} from '../../schemas/Conversation.model';
+import { Message, MessageSchema } from '../../schemas/Message.model';
+import {
+  Notification,
+  NotificationSchema,
+} from '../../schemas/Notification.model';
+import {
+  PhotoComment,
+  PhotoCommentSchema,
+} from '../../schemas/PhotoComment.model';
+import {
+  SupportTicket,
+  SupportTicketSchema,
+} from '../../schemas/SupportTicket.model';
+import {
   AgencySubscription,
   AgencySubscriptionSchema,
 } from '../../schemas/AgencySubscription.model';
@@ -33,6 +54,12 @@ import { NotificationModule } from '../notification/notification.module';
       { name: Follow.name, schema: FollowSchema },
       { name: Like.name, schema: LikeSchema },
       { name: View.name, schema: ViewSchema },
+      { name: ApplicationDocument.name, schema: ApplicationDocumentSchema },
+      { name: Conversation.name, schema: ConversationSchema },
+      { name: Message.name, schema: MessageSchema },
+      { name: Notification.name, schema: NotificationSchema },
+      { name: PhotoComment.name, schema: PhotoCommentSchema },
+      { name: SupportTicket.name, schema: SupportTicketSchema },
       { name: AgencySubscription.name, schema: AgencySubscriptionSchema },
     ]),
     AgencyModule,

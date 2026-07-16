@@ -13,6 +13,10 @@ import {
   PaymentStatus,
 } from '../enums/application.enum';
 import {
+  ApplicationDocumentKind,
+  ApplicationDocumentStatus,
+} from '../enums/application-document.enum';
+import {
   SubscriptionStatus,
   BillingCycle,
   PlanStatus,
@@ -48,6 +52,10 @@ registerEnumType(ServiceVisibility, { name: 'ServiceVisibility' });
 registerEnumType(ApplicationStatus, { name: 'ApplicationStatus' });
 registerEnumType(ApplicationPriority, { name: 'ApplicationPriority' });
 registerEnumType(PaymentStatus, { name: 'PaymentStatus' });
+registerEnumType(ApplicationDocumentKind, { name: 'ApplicationDocumentKind' });
+registerEnumType(ApplicationDocumentStatus, {
+  name: 'ApplicationDocumentStatus',
+});
 
 registerEnumType(ReviewStatus, { name: 'ReviewStatus' });
 

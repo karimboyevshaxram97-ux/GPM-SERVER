@@ -23,7 +23,10 @@ export class Message {
   // sifatida ro'yxatdan o'tib, "Cast to [string] failed" xatosini beradi — PhotoComment
   // izohlariga attachment qo'shishda aynan shu xato aniqlangan edi, bu yerda ham
   // xuddi shu naqsh mavjud edi, faqat hali hech kim ishlatmagani uchun bilinmagan).
-  @Prop({ type: [{ url: String, type: { type: String }, name: String }], default: [] })
+  @Prop({
+    type: [{ url: String, type: { type: String }, name: String }],
+    default: [],
+  })
   attachments: { url: string; type: string; name: string }[];
 
   @Prop({ default: false })

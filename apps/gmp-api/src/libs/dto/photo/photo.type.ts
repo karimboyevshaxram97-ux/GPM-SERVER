@@ -78,6 +78,15 @@ export class PhotoCommentType {
   @Field()
   user: string;
 
+  @Field({ nullable: true })
+  parentComment?: string;
+
+  @Field(() => Int)
+  likeCount: number;
+
+  @Field(() => [MeLiked], { nullable: true })
+  meLiked?: MeLiked[];
+
   // Attachment-only izoh matnsiz bo'lishi mumkin — GraphQL SDL darajasida ham
   // nullable, aks holda birinchi matnisiz izoh serializatsiyada xato beradi.
   @Field({ nullable: true })

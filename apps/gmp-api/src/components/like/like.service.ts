@@ -5,6 +5,10 @@ import { Like, LikeDocument } from '../../schemas/Like.model';
 import { Agency, AgencyDocument } from '../../schemas/Agency.model';
 import { Service, ServiceDocument } from '../../schemas/Service.model';
 import { Photo, PhotoDocument } from '../../schemas/Photo.model';
+import {
+  PhotoComment,
+  PhotoCommentDocument,
+} from '../../schemas/PhotoComment.model';
 import { LikeResult } from '../../libs/dto/like/like.type';
 import { LikeTargetType } from '../../libs/enums';
 
@@ -17,6 +21,8 @@ export class LikeService {
     @InjectModel(Service.name)
     private readonly serviceModel: Model<ServiceDocument>,
     @InjectModel(Photo.name) private readonly photoModel: Model<PhotoDocument>,
+    @InjectModel(PhotoComment.name)
+    private readonly photoCommentModel: Model<PhotoCommentDocument>,
   ) {}
 
   async toggleLike(
@@ -78,6 +84,8 @@ export class LikeService {
   private targetModel(targetType: LikeTargetType): Model<any> {
     if (targetType === LikeTargetType.AGENCY) return this.agencyModel;
     if (targetType === LikeTargetType.PHOTO) return this.photoModel;
+    if (targetType === LikeTargetType.PHOTO_COMMENT)
+      return this.photoCommentModel;
     return this.serviceModel;
   }
 

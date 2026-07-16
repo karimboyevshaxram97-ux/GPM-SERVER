@@ -37,8 +37,23 @@ export class ReviewService {
     return this.reviewModel
       .find({
         service: new Types.ObjectId(serviceId),
-        status: ReviewStatus.APPROVED,
+        status: { $in: BLOCKING_REVIEW_STATUSES },
       })
+      .exec();
+  }
+
+  async findCurrentByUserAndAgency(
+    userId: string,
+    agencyId: string,
+  ): Promise<ReviewDocument | null> {
+    return this.reviewModel
+      .findOne({
+        user: new Types.ObjectId(userId),
+        agency: new Types.ObjectId(agencyId),
+        service: { $exists: false },
+        status: { $in: BLOCKING_REVIEW_STATUSES },
+      })
+      .sort({ createdAt: -1 })
       .exec();
   }
 
@@ -71,6 +86,7 @@ export class ReviewService {
         service: input.serviceId
           ? new Types.ObjectId(input.serviceId)
           : undefined,
+        status: input.serviceId ? ReviewStatus.APPROVED : ReviewStatus.PENDING,
       });
       const saved = await review.save();
 
@@ -115,7 +131,7 @@ export class ReviewService {
       {
         $match: {
           service: new Types.ObjectId(serviceId),
-          status: ReviewStatus.APPROVED,
+          status: { $in: BLOCKING_REVIEW_STATUSES },
         },
       },
       { $group: { _id: null, avg: { $avg: '$rating' }, count: { $sum: 1 } } },

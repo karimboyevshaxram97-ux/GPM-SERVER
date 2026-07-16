@@ -11,12 +11,40 @@ import {
   Application,
   ApplicationDocument,
 } from '../../schemas/Application.model';
-import { Review, ReviewDocument } from '../../schemas/Review.model';
+import {
+  Review,
+  ReviewDocument,
+  BLOCKING_REVIEW_STATUSES,
+} from '../../schemas/Review.model';
 import { Service, ServiceDocument } from '../../schemas/Service.model';
 import { AuditLog, AuditLogDocument } from '../../schemas/AuditLog.model';
 import { Follow, FollowDocument } from '../../schemas/Follow.model';
 import { Like, LikeDocument } from '../../schemas/Like.model';
 import { View, ViewDocument } from '../../schemas/View.model';
+import {
+  ApplicationDocument as ApplicationDocumentEntity,
+  ApplicationDocumentRecord,
+} from '../../schemas/ApplicationDocument.model';
+import {
+  Conversation,
+  ConversationDocument,
+} from '../../schemas/Conversation.model';
+import {
+  Message as MessageEntity,
+  MessageDocument,
+} from '../../schemas/Message.model';
+import {
+  Notification,
+  NotificationDocument,
+} from '../../schemas/Notification.model';
+import {
+  PhotoComment,
+  PhotoCommentDocument,
+} from '../../schemas/PhotoComment.model';
+import {
+  SupportTicket,
+  SupportTicketDocument,
+} from '../../schemas/SupportTicket.model';
 import {
   AgencySubscription,
   AgencySubscriptionDocument,
@@ -28,6 +56,8 @@ import {
   UserStatus,
   SubscriptionStatus,
   NotificationType,
+  UserRole,
+  ApplicationStatus,
 } from '../../libs/enums';
 import {
   AdminUsersFilterInput,
@@ -56,6 +86,18 @@ export class AdminService {
     @InjectModel(Follow.name) private followModel: Model<FollowDocument>,
     @InjectModel(Like.name) private likeModel: Model<LikeDocument>,
     @InjectModel(View.name) private viewModel: Model<ViewDocument>,
+    @InjectModel(ApplicationDocumentEntity.name)
+    private applicationDocumentModel: Model<ApplicationDocumentRecord>,
+    @InjectModel(Conversation.name)
+    private conversationModel: Model<ConversationDocument>,
+    @InjectModel(MessageEntity.name)
+    private messageModel: Model<MessageDocument>,
+    @InjectModel(Notification.name)
+    private notificationModel: Model<NotificationDocument>,
+    @InjectModel(PhotoComment.name)
+    private photoCommentModel: Model<PhotoCommentDocument>,
+    @InjectModel(SupportTicket.name)
+    private supportTicketModel: Model<SupportTicketDocument>,
     @InjectModel(AgencySubscription.name)
     private agencySubscriptionModel: Model<AgencySubscriptionDocument>,
     private readonly agencyService: AgencyService,
@@ -372,6 +414,8 @@ export class AdminService {
   async banUser(adminId: string, userId: string): Promise<UserDocument> {
     const user = await this.userModel.findById(userId).exec();
     if (!user) throw new InternalServerErrorException(Message.USER_NOT_FOUND);
+    if (user.role === UserRole.SUPER_ADMIN)
+      throw new BadRequestException(Message.CANNOT_MODIFY_SUPER_ADMIN);
     user.status = UserStatus.BANNED;
     const saved = await user.save();
     await this.log(
@@ -387,6 +431,8 @@ export class AdminService {
   async unbanUser(adminId: string, userId: string): Promise<UserDocument> {
     const user = await this.userModel.findById(userId).exec();
     if (!user) throw new InternalServerErrorException(Message.USER_NOT_FOUND);
+    if (user.role === UserRole.SUPER_ADMIN)
+      throw new BadRequestException(Message.CANNOT_MODIFY_SUPER_ADMIN);
     user.status = UserStatus.ACTIVE;
     const saved = await user.save();
     await this.log(
@@ -402,6 +448,8 @@ export class AdminService {
   async deleteUser(adminId: string, userId: string): Promise<UserDocument> {
     const user = await this.userModel.findById(userId).exec();
     if (!user) throw new InternalServerErrorException(Message.USER_NOT_FOUND);
+    if (user.role === UserRole.SUPER_ADMIN)
+      throw new BadRequestException(Message.CANNOT_MODIFY_SUPER_ADMIN);
 
     // Agency egasini o'chirish Agency.owner'ni osilib qoldirib, o'sha agency'ni
     // butunlay boshqarib bo'lmaydigan holga keltiradi — avval agency topshirilishi
@@ -410,6 +458,116 @@ export class AdminService {
     if (ownsAgency) throw new BadRequestException(Message.USER_OWNS_AGENCY);
 
     const userObjectId = user._id;
+    const applications = await this.applicationModel
+      .find({ user: userObjectId })
+      .select('_id service status')
+      .lean()
+      .exec();
+    const applicationIds = applications.map((application) => application._id);
+
+    if (applicationIds.length) {
+      await this.applicationDocumentModel
+        .deleteMany({ application: { $in: applicationIds } })
+        .exec();
+    }
+    await this.applicationDocumentModel
+      .deleteMany({ user: userObjectId })
+      .exec();
+
+    const slotCounts = new Map<string, number>();
+    for (const application of applications) {
+      if (
+        application.status === ApplicationStatus.REJECTED ||
+        application.status === ApplicationStatus.WITHDRAWN
+      )
+        continue;
+      const serviceId = application.service?.toString();
+      if (serviceId)
+        slotCounts.set(serviceId, (slotCounts.get(serviceId) ?? 0) + 1);
+    }
+    for (const [serviceId, count] of slotCounts) {
+      await this.serviceModel
+        .findByIdAndUpdate(serviceId, [
+          {
+            $set: {
+              currentApplicationCount: {
+                $max: [0, { $subtract: ['$currentApplicationCount', count] }],
+              },
+            },
+          },
+        ])
+        .exec();
+    }
+
+    await this.applicationModel.deleteMany({ user: userObjectId }).exec();
+
+    const reviews = await this.reviewModel
+      .find({ user: userObjectId })
+      .select('agency service')
+      .lean()
+      .exec();
+    await this.reviewModel.deleteMany({ user: userObjectId }).exec();
+    const affectedReviewTargets = new Map<
+      string,
+      { agencyId: string; serviceId?: string }
+    >();
+    for (const review of reviews) {
+      const agencyId = review.agency?.toString();
+      if (!agencyId) continue;
+      const serviceId = review.service?.toString();
+      affectedReviewTargets.set(`${agencyId}:${serviceId ?? ''}`, {
+        agencyId,
+        serviceId,
+      });
+    }
+    for (const { agencyId, serviceId } of affectedReviewTargets.values()) {
+      await this.recalculateReviewStats(agencyId, serviceId);
+    }
+
+    const comments = await this.photoCommentModel
+      .find({ user: userObjectId })
+      .select('_id')
+      .lean()
+      .exec();
+    const commentIds = comments.map((comment) => comment._id);
+    if (commentIds.length) {
+      await this.photoCommentModel
+        .updateMany(
+          { parentComment: { $in: commentIds } },
+          { $unset: { parentComment: 1 } },
+        )
+        .exec();
+    }
+    await this.photoCommentModel.deleteMany({ user: userObjectId }).exec();
+
+    const conversations = await this.conversationModel
+      .find({ participants: userObjectId })
+      .select('_id')
+      .lean()
+      .exec();
+    const conversationIds = conversations.map(
+      (conversation) => conversation._id,
+    );
+    if (conversationIds.length) {
+      await this.messageModel
+        .deleteMany({ conversation: { $in: conversationIds } })
+        .exec();
+      await this.conversationModel
+        .deleteMany({ _id: { $in: conversationIds } })
+        .exec();
+    }
+    await this.messageModel.deleteMany({ sender: userObjectId }).exec();
+
+    await this.notificationModel.deleteMany({ recipient: userObjectId }).exec();
+    await this.notificationModel
+      .updateMany({ sender: userObjectId }, { $unset: { sender: 1 } })
+      .exec();
+    await this.supportTicketModel
+      .updateMany({ user: userObjectId }, { $unset: { user: 1 } })
+      .exec();
+    await this.agencyModel
+      .updateMany({ admins: userObjectId }, { $pull: { admins: userObjectId } })
+      .exec();
     await this.followModel.deleteMany({ user: userObjectId }).exec();
     await this.likeModel.deleteMany({ user: userObjectId }).exec();
     await this.viewModel.deleteMany({ viewer: userObjectId }).exec();
@@ -494,7 +652,7 @@ export class AdminService {
       {
         $match: {
           service: new Types.ObjectId(serviceId),
-          status: ReviewStatus.APPROVED,
+          status: { $in: BLOCKING_REVIEW_STATUSES },
         },
       },
       { $group: { _id: null, avg: { $avg: '$rating' }, count: { $sum: 1 } } },
