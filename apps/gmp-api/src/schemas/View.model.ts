@@ -15,20 +15,21 @@ export class View {
   @Prop({ enum: ViewTargetType, required: true })
   targetType: ViewTargetType;
 
-  // Kalendar kun bo'yicha (YYYY-MM-DD) dedup bucket — bitta registered viewer bir
-  // targetni bir kunda faqat bitta marta "ko'rgan" hisoblanadi, ertasi kuni yana sanaladi.
+  // Oldingi kunlik dedup yozuvlari bilan backward compatibility uchun saqlanadi.
+  // Yangi view'larda ishlatilmaydi: registered viewer target uchun umrbod bir marta sanaladi.
   @Prop()
   viewDate?: string;
 }
 
 export const ViewSchema = SchemaFactory.createForClass(View);
 
-// Registered foydalanuvchi uchun bir kunda bitta target'ga bitta view — partial index
-// faqat viewer mavjud hujjatlarga tegishli, shuning uchun anonim view'lar (viewer yo'q)
-// hech qachon bu cheklovga tortilmaydi va dedup qilinmaydi.
+// Legacy kunlik unique index yangi hujjatlarda viewDate bo'lmagani sabab parallel
+// upsertlarni ham himoya qiladi. Service filtri viewDate'ni hisobga olmaydi, shuning
+// uchun registered foydalanuvchi keyingi kunlarda ham qayta sanalmaydi.
 ViewSchema.index(
   { viewer: 1, targetId: 1, targetType: 1, viewDate: 1 },
   { unique: true, partialFilterExpression: { viewer: { $exists: true } } },
 );
+ViewSchema.index({ viewer: 1, targetId: 1, targetType: 1 });
 ViewSchema.index({ targetId: 1, targetType: 1 });
 ViewSchema.index({ createdAt: 1 }, { expireAfterSeconds: 60 * 60 * 24 * 90 }); // auto-purge after 90 days

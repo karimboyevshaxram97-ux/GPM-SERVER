@@ -27,16 +27,36 @@ export class ViewService {
   ): Promise<number> {
     if (viewerId) {
       try {
-        await this.viewModel.create({
-          viewer: new Types.ObjectId(viewerId),
-          targetId: new Types.ObjectId(targetId),
-          targetType,
-          viewDate: this.today(),
-        });
+        const result = await this.viewModel
+          .updateOne(
+            {
+              viewer: new Types.ObjectId(viewerId),
+              targetId: new Types.ObjectId(targetId),
+              targetType,
+            },
+            {
+              $setOnInsert: {
+                viewer: new Types.ObjectId(viewerId),
+                targetId: new Types.ObjectId(targetId),
+                targetType,
+              },
+            },
+            { upsert: true },
+          )
+          .exec();
+
+        // Bitta registered user bir target uchun faqat bir marta sanaladi.
+        // Detail query va recordView mutation bir vaqtda chaqirilsa ham faqat upsert
+        // orqali yangi hujjat yaratgan request counter'ni oshiradi.
+        if (result.upsertedCount === 0) {
+          return this.getViewCount(targetId, targetType);
+        }
       } catch (err: any) {
-        // E11000 — shu viewer bugun shu target'ni allaqachon ko'rgan; hisoblagichni
-        // qayta oshirmasdan joriy sonni qaytaramiz. Boshqa xatolar tashlanaveradi.
-        if (err?.code === 11000) return this.getViewCount(targetId, targetType);
+        // Ikki parallel upsert bir paytda yangi hujjat yaratishga urinsa unique index
+        // ulardan bittasini E11000 bilan to'xtatadi; bu qayta view, xato emas.
+        if (err?.code === 11000) {
+          return this.getViewCount(targetId, targetType);
+        }
         throw err;
       }
     } else {
@@ -48,10 +68,6 @@ export class ViewService {
 
     await this.updateViewCount(targetId, targetType);
     return this.getViewCount(targetId, targetType);
-  }
-
-  private today(): string {
-    return new Date().toISOString().slice(0, 10);
   }
 
   async getViewCount(

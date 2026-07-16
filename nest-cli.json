@@ -1,18 +1,30 @@
 {
   "$schema": "https://json.schemastore.org/nest-cli",
   "monorepo": true,
+  "root": "apps/gmp-api",
+  "sourceRoot": "apps/gmp-api/src",
+  "compilerOptions": {
+    "webpack": true,
+    "tsConfigPath": "apps/gmp-api/tsconfig.app.json"
+  },
   "projects": {
     "gmp-api": {
       "type": "application",
       "root": "apps/gmp-api",
-      "entryFile": "src/main",
-      "sourceRoot": "apps/gmp-api/src"
+      "entryFile": "main",
+      "sourceRoot": "apps/gmp-api/src",
+      "compilerOptions": {
+        "tsConfigPath": "apps/gmp-api/tsconfig.app.json"
+      }
     },
     "gmp-batch": {
       "type": "application",
       "root": "apps/gmp-batch",
-      "entryFile": "src/main",
-      "sourceRoot": "apps/gmp-batch/src"
+      "entryFile": "main",
+      "sourceRoot": "apps/gmp-batch/src",
+      "compilerOptions": {
+        "tsConfigPath": "apps/gmp-batch/tsconfig.app.json"
+      }
     }
   }
 }

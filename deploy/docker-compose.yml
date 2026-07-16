@@ -55,7 +55,7 @@ services:
   # ─── Applications ─────────────────────────────────────────────────────────────
   gmp-api:
     build:
-      context: ./apps/gmp-api
+      context: ..
       dockerfile: Dockerfile
     container_name: gmp-api
     ports:
@@ -82,8 +82,9 @@ services:
 
   gmp-batch:
     build:
-      context: ./apps/gmp-batch
+      context: ..
       dockerfile: Dockerfile
+    command: ['node', 'dist/apps/gmp-batch/main.js']
     container_name: gmp-batch
     ports:
       - '4000:4000'
