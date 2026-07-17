@@ -3,7 +3,11 @@ FROM node:22-bookworm-slim AS deps
 WORKDIR /app
 
 COPY package.json package-lock.json ./
-RUN npm ci
+# npm ci talab qiladigan qat'iy lock-fayl mosligi Windows'da generatsiya
+# qilingan lock bilan Linux konteyner o'rtasida platformaga xos optional
+# bog'liqliklar (masalan sharp/@emnapi/@opentelemetry) tufayli buziladi —
+# npm install shu holatlarda joriy platforma uchun to'g'ri qaror qabul qiladi.
+RUN npm install
 
 FROM deps AS build
 
