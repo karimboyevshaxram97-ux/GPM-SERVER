@@ -751,7 +751,7 @@ type Mutation {
   updateMyAgency(input: UpdateAgencyInput!): AgencyType!
   updateAgency(id: String!, input: UpdateAgencyInput!): AgencyType!
   deleteAgency(id: String!): Boolean!
-  recordView(targetId: String!, targetType: ViewTargetType!): Int!
+  recordView(targetId: String!, targetType: ViewTargetType!, anonymousViewerId: String): Int!
   createService(agencyId: String!, input: CreateServiceInput!): ServiceGraphType!
   updateService(id: String!, input: UpdateServiceInput!): ServiceGraphType!
   deleteService(id: String!): Boolean!

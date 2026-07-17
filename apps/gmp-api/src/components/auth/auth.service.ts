@@ -29,10 +29,11 @@ export class AuthService {
   ) {}
 
   async register(input: RegisterInput): Promise<AuthResponse> {
-    const existing = await this.userService.findByPhone(input.phoneNumber);
+    const phoneNumber = input.phoneNumber.trim();
+    const existing = await this.userService.findByPhone(phoneNumber);
     if (existing) throw new ConflictException(Message.ALREADY_EXISTS);
 
-    const autoEmail = `${input.phoneNumber.replace(/\D/g, '')}@gmp.app`;
+    const autoEmail = `${phoneNumber.replace(/\D/g, '')}@gmp.app`;
     const hashedPassword = await bcrypt.hash(input.password, 10);
     const allowedRole =
       input.role === UserRole.AGENCY_ADMIN
@@ -41,7 +42,7 @@ export class AuthService {
     const user = await this.userService.create({
       firstName: input.firstName,
       lastName: input.lastName,
-      phoneNumber: input.phoneNumber,
+      phoneNumber,
       email: autoEmail,
       password: hashedPassword,
       role: allowedRole,
@@ -62,9 +63,9 @@ export class AuthService {
   }
 
   async login(loginInput: LoginInput): Promise<AuthResponse> {
-    let user = await this.userService.findByPhone(loginInput.phoneNumber, true);
-    if (!user)
-      user = await this.userService.findByEmail(loginInput.phoneNumber, true);
+    const identifier = loginInput.phoneNumber.trim();
+    let user = await this.userService.findByPhone(identifier, true);
+    if (!user) user = await this.userService.findByEmail(identifier, true);
     if (!user) throw new UnauthorizedException(Message.NOT_AUTHENTICATED);
 
     if (user.status === UserStatus.BANNED)

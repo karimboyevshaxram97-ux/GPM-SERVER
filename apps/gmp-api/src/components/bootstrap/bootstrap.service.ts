@@ -82,7 +82,7 @@ export class BootstrapService implements OnModuleInit {
     }
 
     await this.userService.createInternal({
-      phoneNumber: phone ?? email!,
+      phoneNumber: phone,
       password: passwordHash,
       firstName,
       lastName,

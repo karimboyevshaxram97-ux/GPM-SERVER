@@ -15,11 +15,18 @@ export class ViewResolver {
     @Args('targetId') targetId: string,
     @Args('targetType', { type: () => ViewTargetType })
     targetType: ViewTargetType,
+    @Args('anonymousViewerId', { type: () => String, nullable: true })
+    anonymousViewerId: string | undefined,
     @CurrentUser() user: any,
   ): Promise<number> {
     console.log('Mutation: recordView');
     const viewerId = user?._id?.toString();
-    return this.viewService.recordView(targetId, targetType, viewerId);
+    return this.viewService.recordView(
+      targetId,
+      targetType,
+      viewerId,
+      viewerId ? undefined : anonymousViewerId,
+    );
   }
 
   @Public()

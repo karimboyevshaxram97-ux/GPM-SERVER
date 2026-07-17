@@ -196,7 +196,6 @@ export class ServiceService {
       throw new ForbiddenException(Message.NOT_ALLOWED_REQUEST);
     }
 
-    await this.viewService.recordView(id, ViewTargetType.SERVICE, userId);
     return result[0];
   }
 

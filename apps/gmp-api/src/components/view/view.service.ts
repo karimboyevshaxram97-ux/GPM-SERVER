@@ -24,19 +24,27 @@ export class ViewService {
     targetId: string,
     targetType: ViewTargetType,
     viewerId?: string,
+    anonymousViewerId?: string,
   ): Promise<number> {
-    if (viewerId) {
+    const normalizedAnonymousId = anonymousViewerId?.trim().slice(0, 128);
+    const identityFilter = viewerId
+      ? { viewer: new Types.ObjectId(viewerId) }
+      : normalizedAnonymousId
+        ? { anonymousViewerId: normalizedAnonymousId }
+        : null;
+
+    if (identityFilter) {
       try {
         const result = await this.viewModel
           .updateOne(
             {
-              viewer: new Types.ObjectId(viewerId),
+              ...identityFilter,
               targetId: new Types.ObjectId(targetId),
               targetType,
             },
             {
               $setOnInsert: {
-                viewer: new Types.ObjectId(viewerId),
+                ...identityFilter,
                 targetId: new Types.ObjectId(targetId),
                 targetType,
               },
@@ -45,7 +53,7 @@ export class ViewService {
           )
           .exec();
 
-        // Bitta registered user bir target uchun faqat bir marta sanaladi.
+        // Registered yoki doimiy anonymous viewer target uchun faqat bir marta sanaladi.
         // Detail query va recordView mutation bir vaqtda chaqirilsa ham faqat upsert
         // orqali yangi hujjat yaratgan request counter'ni oshiradi.
         if (result.upsertedCount === 0) {

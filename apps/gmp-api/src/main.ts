@@ -22,9 +22,22 @@ async function bootstrap() {
         .map((origin) => origin.trim())
         .filter(Boolean)
     : ['http://localhost:3000', 'http://localhost:3001'];
+  const isDevelopment = process.env.NODE_ENV !== 'production';
+  const localDevelopmentOrigin =
+    /^https?:\/\/(?:localhost|127\.0\.0\.1)(?::\d+)?$/;
 
   app.enableCors({
-    origin: allowedOrigins,
+    origin: (origin, callback) => {
+      const isAllowed =
+        !origin ||
+        allowedOrigins.includes(origin) ||
+        (isDevelopment && localDevelopmentOrigin.test(origin));
+
+      callback(
+        isAllowed ? null : new Error(`CORS origin is not allowed: ${origin}`),
+        isAllowed,
+      );
+    },
     credentials: true,
   });
 

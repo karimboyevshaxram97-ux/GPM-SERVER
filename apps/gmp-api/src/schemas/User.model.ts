@@ -31,7 +31,7 @@ export class User {
   })
   password?: string;
 
-  @Prop({ enum: AuthProvider, default: AuthProvider.EMAIL })
+  @Prop({ type: String, enum: AuthProvider, default: AuthProvider.EMAIL })
   authProvider: AuthProvider;
 
   // Provider-issued unique id (only for social accounts)
@@ -56,13 +56,13 @@ export class User {
   @Prop()
   nationality?: string;
 
-  @Prop({ enum: UserStatus, default: UserStatus.ACTIVE })
+  @Prop({ type: String, enum: UserStatus, default: UserStatus.ACTIVE })
   status: UserStatus;
 
-  @Prop({ enum: UserRole, default: UserRole.USER })
+  @Prop({ type: String, enum: UserRole, default: UserRole.USER })
   role: UserRole;
 
-  @Prop({ enum: Lang, default: Lang.UZ })
+  @Prop({ type: String, enum: Lang, default: Lang.UZ })
   preferredLanguage: Lang;
 
   @Prop({ default: false })

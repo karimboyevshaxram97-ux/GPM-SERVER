@@ -9,6 +9,9 @@ export class View {
   @Prop({ type: Types.ObjectId, ref: 'User' })
   viewer?: Types.ObjectId;
 
+  @Prop()
+  anonymousViewerId?: string;
+
   @Prop({ type: Types.ObjectId, required: true })
   targetId: Types.ObjectId;
 
@@ -31,5 +34,12 @@ ViewSchema.index(
   { unique: true, partialFilterExpression: { viewer: { $exists: true } } },
 );
 ViewSchema.index({ viewer: 1, targetId: 1, targetType: 1 });
+ViewSchema.index(
+  { anonymousViewerId: 1, targetId: 1, targetType: 1 },
+  {
+    unique: true,
+    partialFilterExpression: { anonymousViewerId: { $exists: true } },
+  },
+);
 ViewSchema.index({ targetId: 1, targetType: 1 });
 ViewSchema.index({ createdAt: 1 }, { expireAfterSeconds: 60 * 60 * 24 * 90 }); // auto-purge after 90 days

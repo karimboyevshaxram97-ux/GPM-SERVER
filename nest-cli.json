@@ -4,7 +4,7 @@
   "root": "apps/gmp-api",
   "sourceRoot": "apps/gmp-api/src",
   "compilerOptions": {
-    "webpack": true,
+    "webpack": false,
     "tsConfigPath": "apps/gmp-api/tsconfig.app.json"
   },
   "projects": {

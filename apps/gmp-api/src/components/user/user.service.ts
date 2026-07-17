@@ -9,10 +9,16 @@ import * as bcrypt from 'bcrypt';
 import { CreateUserInput } from '../../libs/dto/user/create-user.input';
 import { UpdateUserInput } from '../../libs/dto/user/update-user.input';
 import { User, UserDocument } from '../../schemas/User.model';
-import { AuthProvider, Message, SocialProfile, UserRole } from '../../libs';
+import {
+  AuthProvider,
+  Message,
+  SocialProfile,
+  UserRole,
+  UserStatus,
+} from '../../libs';
 
 interface InternalCreateUserInput {
-  phoneNumber: string;
+  phoneNumber?: string;
   password: string;
   firstName: string;
   lastName: string;
@@ -28,7 +34,9 @@ export class UserService {
     email: string,
     withPassword = false,
   ): Promise<UserDocument | null> {
-    const query = this.userModel.findOne({ email: email.toLowerCase() });
+    const query = this.userModel.findOne({
+      email: email.trim().toLowerCase(),
+    });
     if (withPassword) query.select('+password');
     return query.exec();
   }
@@ -37,7 +45,7 @@ export class UserService {
     phoneNumber: string,
     withPassword = false,
   ): Promise<UserDocument | null> {
-    const query = this.userModel.findOne({ phoneNumber });
+    const query = this.userModel.findOne({ phoneNumber: phoneNumber.trim() });
     if (withPassword) query.select('+password');
     return query.exec();
   }
@@ -129,9 +137,12 @@ export class UserService {
     const update: any = {
       password: input.password,
       role: UserRole.SUPER_ADMIN,
+      status: UserStatus.ACTIVE,
+      authProvider: AuthProvider.EMAIL,
+      emailVerified: true,
     };
-    if (input.phoneNumber) update.phoneNumber = input.phoneNumber;
-    if (input.email) update.email = input.email.toLowerCase();
+    if (input.phoneNumber) update.phoneNumber = input.phoneNumber.trim();
+    if (input.email) update.email = input.email.trim().toLowerCase();
     if (input.firstName) update.firstName = input.firstName;
     if (input.lastName) update.lastName = input.lastName;
 
@@ -139,7 +150,14 @@ export class UserService {
   }
 
   async createInternal(data: InternalCreateUserInput): Promise<UserDocument> {
-    return this.userModel.create(data);
+    return this.userModel.create({
+      ...data,
+      phoneNumber: data.phoneNumber?.trim() || undefined,
+      email: data.email.trim().toLowerCase(),
+      status: UserStatus.ACTIVE,
+      authProvider: AuthProvider.EMAIL,
+      emailVerified: true,
+    });
   }
 
   async findByProvider(

@@ -221,7 +221,6 @@ export class AgencyService {
       throw new InternalServerErrorException(Message.AGENCY_NOT_FOUND);
     }
 
-    await this.viewService.recordView(id, ViewTargetType.AGENCY, userId);
     return agency;
   }
 

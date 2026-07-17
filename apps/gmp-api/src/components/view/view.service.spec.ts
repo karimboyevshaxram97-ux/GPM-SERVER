@@ -5,6 +5,7 @@ import { ViewTargetType } from '../../libs/enums';
 describe('ViewService', () => {
   const targetId = new Types.ObjectId().toString();
   const viewerId = new Types.ObjectId().toString();
+  const anonymousViewerId = 'browser-visitor-id';
 
   function createService(upsertedCount: number) {
     const exec = jest.fn().mockResolvedValue({ upsertedCount });
@@ -86,6 +87,32 @@ describe('ViewService', () => {
       service.recordView(targetId, ViewTargetType.SERVICE, viewerId),
     ).resolves.toBe(1);
 
+    expect(serviceModel.findByIdAndUpdate).not.toHaveBeenCalled();
+    expect(analyticsService.recordServiceView).not.toHaveBeenCalled();
+  });
+
+  it('deduplicates an anonymous browser viewer by its persistent id', async () => {
+    const { service, viewModel, serviceModel, analyticsService } =
+      createService(0);
+
+    await expect(
+      service.recordView(
+        targetId,
+        ViewTargetType.SERVICE,
+        undefined,
+        anonymousViewerId,
+      ),
+    ).resolves.toBe(1);
+
+    expect(viewModel.updateOne).toHaveBeenCalledWith(
+      expect.objectContaining({
+        anonymousViewerId,
+        targetId: expect.any(Types.ObjectId),
+        targetType: ViewTargetType.SERVICE,
+      }),
+      expect.objectContaining({ $setOnInsert: expect.any(Object) }),
+      { upsert: true },
+    );
     expect(serviceModel.findByIdAndUpdate).not.toHaveBeenCalled();
     expect(analyticsService.recordServiceView).not.toHaveBeenCalled();
   });
