@@ -42,7 +42,9 @@ export class UploadService {
       .resize(width, height, {
         fit,
         position: 'centre',
-        withoutEnlargement: fit === 'inside',
+        // Manba rasm target o'lchamdan kichik bo'lsa kattalashtirilmaydi —
+        // aks holda kichik rasm cho'zilib xira chiqadi va bu abadiy faylga yoziladi.
+        withoutEnlargement: true,
       })
       .webp({ quality: 85 })
       .toFile(filepath);
