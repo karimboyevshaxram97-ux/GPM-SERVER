@@ -9,7 +9,10 @@ const UPLOADS_DIR = path.join(process.cwd(), 'uploads');
 const IMAGE_SIZES = {
   avatar: { width: 300, height: 300, fit: 'cover' as const },
   logo: { width: 400, height: 400, fit: 'cover' as const },
-  cover: { width: 1200, height: 400, fit: 'cover' as const },
+  // Ekranga to'liq yoyiladigan banner (`.agency-cover-hero`, background-size:
+  // cover, max-width cheklanmagan) — 1200px keng ekranlarda (1366/1440/1920)
+  // xiralashib ko'rinardi, shuning uchun nisbat (3:1) saqlangan holda kattalashtirildi.
+  cover: { width: 1920, height: 640, fit: 'cover' as const },
   image: { width: 800, height: 600, fit: 'cover' as const },
   // Izoh rasmlari: board-foto kabi markazdan kesilmasin — faqat maksimal
   // o'lchamga (kesmasdan) sig'diriladi.
